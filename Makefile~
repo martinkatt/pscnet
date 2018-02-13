@@ -1,0 +1,2 @@
+all:
+	gcc net/netbase.cpp -o netbase
