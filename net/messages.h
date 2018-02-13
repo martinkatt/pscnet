@@ -28,6 +28,10 @@
 
 #include "server/bulkobjects/activespell.h"
 
+#include <memory>
+#include <string>
+#include <vector>
+
 /**
  * \addtogroup messages
  * @{ */
@@ -37,7 +41,7 @@ struct iEngine;
 
 
 class psLinearMovement;
-class csStringHashReversible;
+class std::stringHashReversible;
 
 // This holds the version number of the network code, remember to increase
 // this each time you do an update which breaks compatibility
@@ -337,7 +341,7 @@ class psMessageCracker
 public:
     static MsgHandler* msghandler;
 
-    csRef<MsgEntry> msg;
+    std::shared_ptr<MsgEntry> msg;
     bool valid;
     int filterNumber;
 
@@ -355,7 +359,7 @@ public:
     /**
      *  Multicasts the message to all current connections.
      */
-    void Multicast(csArray<PublishDestination> &multi, uint32_t except, float range);
+    void Multicast(std::vector<PublishDestination> &multi, uint32_t except, float range);
 
     /**
      *  Publishes the message to the local program.
@@ -370,7 +374,7 @@ public:
      * Use the PSF_DECLARE_MSG_FACTORY macro.
      *
      */
-    virtual csString GetMessageTypeName() const = 0;
+    virtual std::string GetMessageTypeName() const = 0;
 
     /**
      *  Converts the message into human readable string.
@@ -383,7 +387,7 @@ public:
      * @param accessPointers A struct to a number of access pointers.
      * @return Return a human readable string for the message.
      */
-    virtual csString ToString(NetBase::AccessPointers* accessPointers) = 0;
+    virtual std::string ToString(NetBase::AccessPointers* accessPointers) = 0;
     //{ return "Not implemented"; }
 };
 
@@ -394,19 +398,19 @@ public:
 
 typedef psMessageCracker* (*psfMsgFactoryFunc)(MsgEntry* me, NetBase::AccessPointers* accessPointers);
 
-csString GetMsgTypeName(int msgType);
-void DecodeMessage(MsgEntry* me, NetBase::AccessPointers* accessPointers, bool filterhex, csString &msgText, int &filterNumber);
+std::string GetMsgTypeName(int msgType);
+void DecodeMessage(MsgEntry* me, NetBase::AccessPointers* accessPointers, bool filterhex, std::string &msgText, int &filterNumber);
 
 void psfRegisterMsgFactoryFunction(psfMsgFactoryFunc factoryfunc, int msgtype, const char* msgtypename);
 void psfUnRegisterMsgFactories(void);
 psMessageCracker* psfCreateMsg(int msgtype,
                                MsgEntry* me,
                                NetBase::AccessPointers* accessPointers);
-csString psfMsgTypeName(int msgType);
+std::string psfMsgTypeName(int msgType);
 int psfMsgType(const char* msgTypeName);
 
 #define PSF_DECLARE_MSG_FACTORY()                                 \
-    virtual csString GetMessageTypeName() const;                  \
+    virtual std::string GetMessageTypeName() const;                  \
     static psMessageCracker* CreateMessage(MsgEntry* me,          \
                NetBase::AccessPointers* accessPointers)
 
@@ -430,7 +434,7 @@ int psfMsgType(const char* msgTypeName);
     }
 
 #define PSF_IMPLEMENT_MSG_FACTORY_TYPENAME(Class,MsgType)         \
-    csString Class::GetMessageTypeName() const                    \
+    std::string Class::GetMessageTypeName() const                    \
     {                                                             \
         return #MsgType;                                          \
     }
@@ -471,10 +475,10 @@ public:
      * @param accessPointers A struct to a number of access pointers.
      * @return Return a human readable string for the message.
      */
-    virtual csString ToString(NetBase::AccessPointers* accessPointers);
+    virtual std::string ToString(NetBase::AccessPointers* accessPointers);
 
-    csString charName;      /// Name of the character that we have to Propose
-    csString proposeMsg;  /// Message from player to the character being Proposed
+    std::string charName;      /// Name of the character that we have to Propose
+    std::string proposeMsg;  /// Message from player to the character being Proposed
 };
 
 /** The message sent when someone divorces someone */
@@ -492,9 +496,9 @@ public:
      * @param accessPointers A struct to a number of access pointers.
      * @return Return a human readable string for the message.
      */
-    virtual csString ToString(NetBase::AccessPointers* accessPointers);
+    virtual std::string ToString(NetBase::AccessPointers* accessPointers);
 
-    csString divorceMsg;  /// Divorcing Message from player to spouse
+    std::string divorceMsg;  /// Divorcing Message from player to spouse
 };
 
 /** The message is sent when someone requests marriage details of a player */
@@ -512,7 +516,7 @@ public:
      * @param accessPointers A struct to a number of access pointers.
      * @return Return a human readable string for the message.
      */
-    virtual csString ToString(NetBase::AccessPointers* accessPointers);
+    virtual std::string ToString(NetBase::AccessPointers* accessPointers);
 };
 
 
@@ -534,9 +538,9 @@ public:
      * @param accessPointers A struct to a number of access pointers.
      * @return Return a human readable string for the message.
      */
-    virtual csString ToString(NetBase::AccessPointers* accessPointers);
+    virtual std::string ToString(NetBase::AccessPointers* accessPointers);
 
-    csString charName;
+    std::string charName;
 };
 
 /**
@@ -568,7 +572,7 @@ public:
      * @param accessPointers A struct to a number of access pointers.
      * @return Return a human readable string for the message.
      */
-    virtual csString ToString(NetBase::AccessPointers* accessPointers);
+    virtual std::string ToString(NetBase::AccessPointers* accessPointers);
 
     bool NetVersionOk();
 };
@@ -580,7 +584,7 @@ class psAuthenticationMessage : public psMessageCracker
 {
 public:
     uint32_t  netversion;
-    csString  sAddr,
+    std::string  sAddr,
               sUser,
               sPassword,
               sPassword256,
@@ -588,7 +592,7 @@ public:
               os_platform,
               machine_type,
               gfxcard_, gfxversion_;
-    uint16    os_ver_major,
+    uint16_t    os_ver_major,
               os_ver_minor;
 
     /**
@@ -597,7 +601,11 @@ public:
      * creation when a user wants to log in.
      */
     psAuthenticationMessage(uint32_t clientnum,const char* userid,
-                            const char* password, const char* os, uint16 os_ver_major, uint16 os_ver_minor, const char *os_platform, const char *machine_type, const char* gfxcard, const char* gfxversion, const char* sPassword256 = "", uint32_t version=PS_NETVERSION);
+                            const char* password, const char* os, uint16 os_ver_major,
+                            uint16_t os_ver_minor, const char *os_platform,
+                            const char *machine_type, const char* gfxcard, 
+                            const char* gfxversion, 
+                            const char* sPassword256 = "", uint32_t version=PS_NETVERSION);
 
     /**
      * This constructor receives a PS Message struct and cracks it apart
@@ -615,7 +623,7 @@ public:
      * @param accessPointers A struct to a number of access pointers.
      * @return Return a human readable string for the message.
      */
-    virtual csString ToString(NetBase::AccessPointers* accessPointers);
+    virtual std::string ToString(NetBase::AccessPointers* accessPointers);
 
     bool NetVersionOk();
 };
@@ -634,10 +642,10 @@ public:
      * @param accessPointers A struct to a number of access pointers.
      * @return Return a human readable string for the message.
      */
-    virtual csString ToString(NetBase::AccessPointers* accessPointers);
+    virtual std::string ToString(NetBase::AccessPointers* accessPointers);
 
     /// The name of the character that the account user wants to use.
-    csString characterName;
+    std::string characterName;
 };
 
 class psCharacterApprovedMessage : public psMessageCracker
@@ -654,7 +662,7 @@ public:
      * @param accessPointers A struct to a number of access pointers.
      * @return Return a human readable string for the message.
      */
-    virtual csString ToString(NetBase::AccessPointers* accessPointers);
+    virtual std::string ToString(NetBase::AccessPointers* accessPointers);
 };
 
 /**
@@ -679,7 +687,7 @@ public:
      * @param accessPointers A struct to a number of access pointers.
      * @return Return a human readable string for the message.
      */
-    virtual csString ToString(NetBase::AccessPointers* accessPointers);
+    virtual std::string ToString(NetBase::AccessPointers* accessPointers);
 
 };
 
@@ -715,8 +723,8 @@ public:
                       const char* mesh, const char* traits, const char* equipment);
 
     /// Get the next character definition from the MsgEntry buffer
-    void GetCharacter(MsgEntry* message,csString &fullname, csString &race,
-                      csString &mesh, csString &traits,csString &equipment);
+    void GetCharacter(MsgEntry* message,std::string &fullname, std::string &race,
+                      std::string &mesh, std::string &traits,std::string &equipment);
 
     /// Build the message
     void ConstructMsg();
@@ -729,10 +737,10 @@ public:
      * @param accessPointers A struct to a number of access pointers.
      * @return Return a human readable string for the message.
      */
-    virtual csString ToString(NetBase::AccessPointers* accessPointers);
+    virtual std::string ToString(NetBase::AccessPointers* accessPointers);
 
 private:
-    csStringArray contents;
+    std::stringArray contents;
 };
 
 
@@ -743,7 +751,7 @@ class psAuthRejectedMessage : public psMessageCracker
 {
 public:
     /** This is something like "account not valid" or "password not valid */
-    csString msgReason;
+    std::string msgReason;
 
     /// Create psMessageBytes struct for outbound use
     psAuthRejectedMessage(uint32_t clientToken,const char* reason);
@@ -759,7 +767,7 @@ public:
      * @param accessPointers A struct to a number of access pointers.
      * @return Return a human readable string for the message.
      */
-    virtual csString ToString(NetBase::AccessPointers* accessPointers);
+    virtual std::string ToString(NetBase::AccessPointers* accessPointers);
 
 };
 
@@ -804,7 +812,7 @@ public:
     uint8_t  iChatType;
 
     /** name of person this chat message comes from */
-    csString  sPerson;
+    std::string  sPerson;
 
     /**
      * Name of the other person involved in this chat message (used only with some chat types)
@@ -813,10 +821,10 @@ public:
      * message type uses it. Modify both constructors if you want to use it with other chat message
      * types.
      */
-    csString sOther;
+    std::string sOther;
 
     /** the text the message contains */
-    csString  sText;
+    std::string  sText;
 
     /** is the text supposed to be translated by psLocalization on target client ? */
     bool translate;
@@ -847,7 +855,7 @@ public:
      * @param accessPointers A struct to a number of access pointers.
      * @return Return a human readable string for the message.
      */
-    virtual csString ToString(NetBase::AccessPointers* accessPointers);
+    virtual std::string ToString(NetBase::AccessPointers* accessPointers);
 
     /** Translate type code into words.  Could be multilingual in future. */
     const char* GetTypeText();
@@ -859,7 +867,7 @@ public:
 class psChannelJoinMessage : public psMessageCracker
 {
 public:
-    csString channel;
+    std::string channel;
     psChannelJoinMessage(const char* name);
     psChannelJoinMessage(MsgEntry* message);
 
@@ -871,7 +879,7 @@ public:
      * @param accessPointers A struct to a number of access pointers.
      * @return Return a human readable string for the message.
      */
-    virtual csString ToString(NetBase::AccessPointers* accessPointers);
+    virtual std::string ToString(NetBase::AccessPointers* accessPointers);
 };
 
 /**
@@ -881,7 +889,7 @@ class psChannelJoinedMessage : public psMessageCracker
 {
 public:
     uint16_t id;
-    csString channel;
+    std::string channel;
     psChannelJoinedMessage(uint32_t clientnum, const char* name, uint16_t id);
     psChannelJoinedMessage(MsgEntry* message);
 
@@ -893,7 +901,7 @@ public:
      * @param accessPointers A struct to a number of access pointers.
      * @return Return a human readable string for the message.
      */
-    virtual csString ToString(NetBase::AccessPointers* accessPointers);
+    virtual std::string ToString(NetBase::AccessPointers* accessPointers);
 };
 
 /**
@@ -915,7 +923,7 @@ public:
      * @param accessPointers A struct to a number of access pointers.
      * @return Return a human readable string for the message.
      */
-    virtual csString ToString(NetBase::AccessPointers* accessPointers);
+    virtual std::string ToString(NetBase::AccessPointers* accessPointers);
 };
 
 /**
@@ -929,7 +937,7 @@ class psSystemMessage : public psMessageCracker
 protected:
     psSystemMessage() {}
 public:
-    csString msgline;
+    std::string msgline;
     uint32_t type;
 
     psSystemMessage(uint32_t clientnum, uint32_t msgtype, const char* fmt, ...);
@@ -944,7 +952,7 @@ public:
      * @param accessPointers A struct to a number of access pointers.
      * @return Return a human readable string for the message.
      */
-    virtual csString ToString(NetBase::AccessPointers* accessPointers);
+    virtual std::string ToString(NetBase::AccessPointers* accessPointers);
 };
 
 /**
@@ -964,14 +972,14 @@ public:
 struct psPetitionInfo
 {
     int id;                 ///< unique id of the petition
-    csString petition;      ///< petition text
-    csString status;        ///< status of the petition
-    csString assignedgm;    ///< the currently assigned GM
+    std::string petition;      ///< petition text
+    std::string status;        ///< status of the petition
+    std::string assignedgm;    ///< the currently assigned GM
 
     int escalation;         ///< the escalation level of the petition
-    csString player;        ///< the player
-    csString created;       ///< date and time of creation
-    csString resolution;    ///< resolution of a closed petition
+    std::string player;        ///< the player
+    std::string created;       ///< date and time of creation
+    std::string resolution;    ///< resolution of a closed petition
 
     bool online;            ///< is the player online?
 };
@@ -995,9 +1003,9 @@ enum
 class psPetitionMessage : public psMessageCracker
 {
 public:
-    csArray<psPetitionInfo> petitions;
+    std::vector<psPetitionInfo> petitions;
     bool success;
-    csString error;
+    std::string error;
     int msgType;
     bool isGM;
 
@@ -1005,7 +1013,7 @@ public:
     {
         msgType = PETITION_LIST;
     }
-    psPetitionMessage(uint32_t clientnum, csArray<psPetitionInfo>* petitionArray, const char* errMsg,
+    psPetitionMessage(uint32_t clientnum, std::vector<psPetitionInfo>* petitionArray, const char* errMsg,
                       bool succeed = true, int type = PETITION_LIST, bool gm = false);
     psPetitionMessage(MsgEntry* message);
 
@@ -1017,7 +1025,7 @@ public:
      * @param accessPointers A struct to a number of access pointers.
      * @return Return a human readable string for the message.
      */
-    virtual csString ToString(NetBase::AccessPointers* accessPointers);
+    virtual std::string ToString(NetBase::AccessPointers* accessPointers);
 };
 
 /**
@@ -1038,8 +1046,8 @@ class psPetitionRequestMessage: public psMessageCracker
 {
 public:
     bool isGM;
-    csString request;
-    csString desc;
+    std::string request;
+    std::string desc;
     int id;
 
     psPetitionRequestMessage(bool gm, const char* requestCmd, int petitionID = -1, const char* petDesc = "");
@@ -1053,7 +1061,7 @@ public:
      * @param accessPointers A struct to a number of access pointers.
      * @return Return a human readable string for the message.
      */
-    virtual csString ToString(NetBase::AccessPointers* accessPointers);
+    virtual std::string ToString(NetBase::AccessPointers* accessPointers);
 };
 
 /**
@@ -1065,15 +1073,15 @@ public:
 
     struct PlayerInfo
     {
-        csString name;
-        csString lastName;
+        std::string name;
+        std::string lastName;
         int gender;
-        csString guild;
-        csString sector;
+        std::string guild;
+        std::string sector;
     };
 
     int gmSettings;
-    csArray<PlayerInfo> players;
+    std::vector<PlayerInfo> players;
     int type;
 
     enum
@@ -1084,7 +1092,7 @@ public:
     };
 
     psGMGuiMessage(uint32_t clientnum, int gmSets);
-    psGMGuiMessage(uint32_t clientnum, csArray<PlayerInfo>* playerArray, int type);
+    psGMGuiMessage(uint32_t clientnum, std::vector<PlayerInfo>* playerArray, int type);
     psGMGuiMessage(MsgEntry* message);
 
     PSF_DECLARE_MSG_FACTORY();
@@ -1095,7 +1103,7 @@ public:
      * @param accessPointers A struct to a number of access pointers.
      * @return Return a human readable string for the message.
      */
-    virtual csString ToString(NetBase::AccessPointers* accessPointers);
+    virtual std::string ToString(NetBase::AccessPointers* accessPointers);
 };
 
 //--------------------------------------------------------------------------
@@ -1106,7 +1114,7 @@ public:
 class psGuildCmdMessage : public psMessageCracker
 {
 public:
-    csString command, subCmd, permission, guildname, player, levelname, accept, secret, web_page,motd, alliancename;
+    std::string command, subCmd, permission, guildname, player, levelname, accept, secret, web_page,motd, alliancename;
     int level;
 
 
@@ -1121,7 +1129,7 @@ public:
      * @param accessPointers A struct to a number of access pointers.
      * @return Return a human readable string for the message.
      */
-    virtual csString ToString(NetBase::AccessPointers* accessPointers);
+    virtual std::string ToString(NetBase::AccessPointers* accessPointers);
 };
 
 //--------------------------------------------------------------------------
@@ -1173,7 +1181,7 @@ public:
      *
      */
     psGUIGuildMessage(uint32_t command,
-                      csString commandData);
+                      std::string commandData);
 
     /**
      * Constuct a new Guild message to go on the network.
@@ -1188,7 +1196,7 @@ public:
      */
     psGUIGuildMessage(uint32_t clientNum,
                       uint32_t command,
-                      csString commandData);
+                      std::string commandData);
 
     /// Crack this message off the network.
     psGUIGuildMessage(MsgEntry* message);
@@ -1201,10 +1209,10 @@ public:
      * @param accessPointers A struct to a number of access pointers.
      * @return Return a human readable string for the message.
      */
-    virtual csString ToString(NetBase::AccessPointers* accessPointers);
+    virtual std::string ToString(NetBase::AccessPointers* accessPointers);
 
     uint32_t command;
-    csString commandData;
+    std::string commandData;
 };
 
 //--------------------------------------------------------------------------
@@ -1215,7 +1223,7 @@ public:
 class psGroupCmdMessage : public psMessageCracker
 {
 public:
-    csString command,player,accept;
+    std::string command,player,accept;
 
     psGroupCmdMessage(const char* cmd);
     psGroupCmdMessage(uint32_t clientnum,const char* cmd);
@@ -1229,7 +1237,7 @@ public:
      * @param accessPointers A struct to a number of access pointers.
      * @return Return a human readable string for the message.
      */
-    virtual csString ToString(NetBase::AccessPointers* accessPointers);
+    virtual std::string ToString(NetBase::AccessPointers* accessPointers);
 };
 
 //--------------------------------------------------------------------------
@@ -1241,10 +1249,10 @@ public:
 class psUserCmdMessage : public psMessageCracker
 {
 public:
-    csString command,player,filter,action,text,target,attack;
+    std::string command,player,filter,action,text,target,attack;
     int dice,sides,dtarget;
     int level;
-    csString stance;
+    std::string stance;
 
     psUserCmdMessage(const char* cmd);
     psUserCmdMessage(MsgEntry* message);
@@ -1257,7 +1265,7 @@ public:
      * @param accessPointers A struct to a number of access pointers.
      * @return Return a human readable string for the message.
      */
-    virtual csString ToString(NetBase::AccessPointers* accessPointers);
+    virtual std::string ToString(NetBase::AccessPointers* accessPointers);
 };
 
 //--------------------------------------------------------------------------
@@ -1269,11 +1277,11 @@ public:
 class psWorkCmdMessage : public psMessageCracker
 {
 public:
-    csString command;
-    csString player;
-    csString filter;
+    std::string command;
+    std::string player;
+    std::string filter;
 
-    csString repairSlotName;        ///< The name of the slot to repair.
+    std::string repairSlotName;        ///< The name of the slot to repair.
 
     psWorkCmdMessage(const char* cmd);
     psWorkCmdMessage(MsgEntry* message);
@@ -1286,7 +1294,7 @@ public:
      * @param accessPointers A struct to a number of access pointers.
      * @return Return a human readable string for the message.
      */
-    virtual csString ToString(NetBase::AccessPointers* accessPointers);
+    virtual std::string ToString(NetBase::AccessPointers* accessPointers);
 };
 
 //--------------------------------------------------------------------------
@@ -1298,7 +1306,7 @@ public:
 class psAdminCmdMessage : public psMessageCracker
 {
 public:
-    csString cmd;
+    std::string cmd;
 
     psAdminCmdMessage(const char* cmd);
     psAdminCmdMessage(const char* cmd, uint32_t client = 0);
@@ -1313,7 +1321,7 @@ public:
      * @param accessPointers A struct to a number of access pointers.
      * @return Return a human readable string for the message.
      */
-    virtual csString ToString(NetBase::AccessPointers* accessPointers);
+    virtual std::string ToString(NetBase::AccessPointers* accessPointers);
 };
 
 //--------------------------------------------------------------------------
@@ -1325,7 +1333,7 @@ public:
 class psGenericCmdMessage : public psMessageCracker
 {
 public:
-    csString cmd;
+    std::string cmd;
 
     psGenericCmdMessage(const char* cmd);
     psGenericCmdMessage(const char* cmd, uint32_t client = 0);
@@ -1340,7 +1348,7 @@ public:
      * @param accessPointers A struct to a number of access pointers.
      * @return Return a human readable string for the message.
      */
-    virtual csString ToString(NetBase::AccessPointers* accessPointers);
+    virtual std::string ToString(NetBase::AccessPointers* accessPointers);
 };
 
 //--------------------------------------------------------------------------
@@ -1348,7 +1356,7 @@ class psDisconnectMessage : public psMessageCracker
 {
 public:
     EID actor;
-    csString msgReason;
+    std::string msgReason;
 
     psDisconnectMessage(uint32_t clientnum, EID actorid, const char* reason);
     psDisconnectMessage(MsgEntry* message);
@@ -1361,7 +1369,7 @@ public:
      * @param accessPointers A struct to a number of access pointers.
      * @return Return a human readable string for the message.
      */
-    virtual csString ToString(NetBase::AccessPointers* accessPointers);
+    virtual std::string ToString(NetBase::AccessPointers* accessPointers);
 };
 
 //--------------------------------------------------------------------------
@@ -1370,8 +1378,8 @@ class psUserActionMessage : public psMessageCracker
 {
 public:
     EID target;
-    csString action;
-    csString dfltBehaviors;
+    std::string action;
+    std::string dfltBehaviors;
 
     psUserActionMessage(uint32_t clientnum, EID target, const char* action, const char* dfltBehaviors="");
     psUserActionMessage(MsgEntry* message);
@@ -1384,7 +1392,7 @@ public:
      * @param accessPointers A struct to a number of access pointers.
      * @return Return a human readable string for the message.
      */
-    virtual csString ToString(NetBase::AccessPointers* accessPointers);
+    virtual std::string ToString(NetBase::AccessPointers* accessPointers);
 };
 
 //---------------------------------------------------------------------------
@@ -1393,7 +1401,7 @@ public:
 class psGUIInteractMessage : public psMessageCracker
 {
 public:
-    psGUIInteractMessage(uint32_t clientnum, uint32_t options, csString command = "");
+    psGUIInteractMessage(uint32_t clientnum, uint32_t options, std::string command = "");
     psGUIInteractMessage(MsgEntry* message);
 
     PSF_DECLARE_MSG_FACTORY();
@@ -1404,7 +1412,7 @@ public:
      * @param accessPointers A struct to a number of access pointers.
      * @return Return a human readable string for the message.
      */
-    virtual csString ToString(NetBase::AccessPointers* accessPointers);
+    virtual std::string ToString(NetBase::AccessPointers* accessPointers);
 
     enum guiOptions
     {
@@ -1445,7 +1453,7 @@ public:
 public:
     /// Holds the options that the window should display.
     uint32_t options;
-    csString genericCommand;
+    std::string genericCommand;
 };
 
 //--------------------------------------------------------------------------
@@ -1469,7 +1477,7 @@ public:
         RELOAD_CACHE
     };
 
-    csStringFast<1024> actionXML;
+    std::stringFast<1024> actionXML;
 
     // ctor
     psMapActionMessage(uint32_t clientnum, uint32_t cmd, const char* xml);
@@ -1485,7 +1493,7 @@ public:
      * @param accessPointers A struct to a number of access pointers.
      * @return Return a human readable string for the message.
      */
-    virtual csString ToString(NetBase::AccessPointers* accessPointers);
+    virtual std::string ToString(NetBase::AccessPointers* accessPointers);
 };
 
 //---------------------------------------------------------------------------
@@ -1495,8 +1503,8 @@ class psAttackQueueMessage : public psMessageCracker
 public:
     struct AAttack
     {
-        csString Name;
-        csString Image;
+        std::string Name;
+        std::string Image;
     };
     psAttackQueueMessage();
     psAttackQueueMessage(uint32_t clientnum);
@@ -1504,12 +1512,12 @@ public:
 
     PSF_DECLARE_MSG_FACTORY();
 
-    virtual csString ToString(NetBase::AccessPointers* accessPointers);
+    virtual std::string ToString(NetBase::AccessPointers* accessPointers);
 
-    void AddAttack(const csString& name, const csString& image);
-    void Construct(csStringSet* msgstrings);
+    void AddAttack(const std::string& name, const std::string& image);
+    void Construct(std::stringSet* msgstrings);
 
-    csArray<AAttack> attacks;
+    std::vector<AAttack> attacks;
 private:
     uint32_t client;
     uint32_t size;
@@ -1531,7 +1539,7 @@ public:
      * @param accessPointers A struct to a number of access pointers.
      * @return Return a human readable string for the message.
      */
-    virtual csString ToString(NetBase::AccessPointers* accessPointers);
+    virtual std::string ToString(NetBase::AccessPointers* accessPointers);
 
     enum playerMode
     {
@@ -1575,7 +1583,7 @@ public:
      * @param accessPointers A struct to a number of access pointers.
      * @return Return a human readable string for the message.
      */
-    virtual csString ToString(NetBase::AccessPointers* accessPointers);
+    virtual std::string ToString(NetBase::AccessPointers* accessPointers);
 
 public:
     bool locked;
@@ -1607,7 +1615,7 @@ public:
         bool downfall_is_snow;
         bool has_fog;
         bool has_lightning;
-        csString sector;
+        std::string sector;
         int downfall_drops; // 0 = no downfall
         int downfall_fade;
         int fog_density;    // 0 = no fog
@@ -1627,7 +1635,7 @@ public:
      * @param accessPointers A struct to a number of access pointers.
      * @return Return a human readable string for the message.
      */
-    virtual csString ToString(NetBase::AccessPointers* accessPointers);
+    virtual std::string ToString(NetBase::AccessPointers* accessPointers);
 
 public:
     /// Holds the options that the window should display.
@@ -1726,7 +1734,7 @@ public:
      * @param accessPointers A struct to a number of access pointers.
      * @return Return a human readable string for the message.
      */
-    virtual csString ToString(NetBase::AccessPointers* accessPointers);
+    virtual std::string ToString(NetBase::AccessPointers* accessPointers);
 
 
     /// Add an item to the output message buffer
@@ -1740,7 +1748,7 @@ public:
                  float size,
                  const char* icon,
                  int purifyStatus,
-                 csStringSet* msgstrings);
+                 std::stringSet* msgstrings);
 
     /// Add a newly emptied slot to output message buffer.
     void AddEmptySlot(int containerID, int slotID);
@@ -1753,20 +1761,20 @@ public:
     /// A small struct to hold item info after read out of message.
     struct ItemDescription
     {
-        csString name;
-        csString meshName;
-        csString materialName;
+        std::string name;
+        std::string meshName;
+        std::string materialName;
         int slot;
         float weight;
         float size;
         int stackcount;
-        csString iconImage;
+        std::string iconImage;
         int container;
         int purifyStatus;
     };
 
     // Item list
-    csArray<ItemDescription> items;
+    std::vector<ItemDescription> items;
     size_t totalItems;
     size_t totalEmptiedSlots;
     float maxWeight;    ///< The total max weight the player can carry.
@@ -1780,7 +1788,7 @@ public:
 class psNewSectorMessage : public psMessageCracker
 {
 public:
-    psNewSectorMessage(const csString &oldSector, const csString &newSector, csVector3 pos, bool use_yrot = false, float yrot = 0.0);
+    psNewSectorMessage(const std::string &oldSector, const std::string &newSector, csVector3 pos, bool use_yrot = false, float yrot = 0.0);
     psNewSectorMessage(MsgEntry* message);
 
     PSF_DECLARE_MSG_FACTORY();
@@ -1791,11 +1799,11 @@ public:
      * @param accessPointers A struct to a number of access pointers.
      * @return Return a human readable string for the message.
      */
-    virtual csString ToString(NetBase::AccessPointers* accessPointers);
+    virtual std::string ToString(NetBase::AccessPointers* accessPointers);
 
 public:
     /// Holds the options that the window should display.
-    csString oldSector, newSector;
+    std::string oldSector, newSector;
     csVector3 pos;
     float yrot;              ///< Rotation around Y-axis in radians
     bool use_yrot;           ///< Use the yrot value to set the rotation
@@ -1823,7 +1831,7 @@ public:
      * @param accessPointers A struct to a number of access pointers.
      * @return Return a human readable string for the message.
      */
-    virtual csString ToString(NetBase::AccessPointers* accessPointers);
+    virtual std::string ToString(NetBase::AccessPointers* accessPointers);
 
     EID entity;
     int lootitem;
@@ -1847,12 +1855,12 @@ public:
      * @param accessPointers A struct to a number of access pointers.
      * @return Return a human readable string for the message.
      */
-    virtual csString ToString(NetBase::AccessPointers* accessPointers);
+    virtual std::string ToString(NetBase::AccessPointers* accessPointers);
 
-    void Populate(EID entity, csString &lootstr, int cnum);
+    void Populate(EID entity, std::string &lootstr, int cnum);
 
     EID entity_id;
-    csString lootxml;
+    std::string lootxml;
 };
 
 //---------------------------------------------------------------------------
@@ -1872,11 +1880,11 @@ public:
      * @param accessPointers A struct to a number of access pointers.
      * @return Return a human readable string for the message.
      */
-    virtual csString ToString(NetBase::AccessPointers* accessPointers);
+    virtual std::string ToString(NetBase::AccessPointers* accessPointers);
 
-    void Populate(csString &queststr, int cnum);
+    void Populate(std::string &queststr, int cnum);
 
-    csString questxml;
+    std::string questxml;
 };
 
 //---------------------------------------------------------------------------
@@ -1902,10 +1910,10 @@ public:
      * @param accessPointers A struct to a number of access pointers.
      * @return Return a human readable string for the message.
      */
-    virtual csString ToString(NetBase::AccessPointers* accessPointers);
+    virtual std::string ToString(NetBase::AccessPointers* accessPointers);
 
     int command,id;
-    csString xml;
+    std::string xml;
 };
 
 //---------------------------------------------------------------------------
@@ -1925,10 +1933,10 @@ public:
      * @param accessPointers A struct to a number of access pointers.
      * @return Return a human readable string for the message.
      */
-    virtual csString ToString(NetBase::AccessPointers* accessPointers);
+    virtual std::string ToString(NetBase::AccessPointers* accessPointers);
 
     EID entity_id;
-    csString action;
+    std::string action;
     int duration;
 };
 
@@ -1971,11 +1979,11 @@ public:
                        EID actorid,
                        uint8_t type,
                        int slot,
-                       csString &mesh,
-                       csString &part,
-                       csString &texture,
-                       csString &partMesh,
-                       csString &removedMesh);
+                       std::string &mesh,
+                       std::string &part,
+                       std::string &texture,
+                       std::string &partMesh,
+                       std::string &removedMesh);
 
 
     /// Crack this message off the network.
@@ -1989,17 +1997,17 @@ public:
      * @param accessPointers A struct to a number of access pointers.
      * @return Return a human readable string for the message.
      */
-    virtual csString ToString(NetBase::AccessPointers* accessPointers);
+    virtual std::string ToString(NetBase::AccessPointers* accessPointers);
 
     uint8_t type;
     int player;
-    csString mesh;
+    std::string mesh;
     int slot;
-    csString part;
-    csString texture;
-    csString partMesh; /* Set if the body part given by pattern given in part
+    std::string part;
+    std::string texture;
+    std::string partMesh; /* Set if the body part given by pattern given in part
                           should be replaced with this */
-    csString removedMesh; ///< Lists the mesh which should be removed when this item is equipped.
+    std::string removedMesh; ///< Lists the mesh which should be removed when this item is equipped.
 };
 
 //--------------------------------------------------------------------------
@@ -2044,10 +2052,10 @@ public:
      */
     psGUIMerchantMessage(uint32_t clientNum,
                          uint8_t command,
-                         csString commandData);
+                         std::string commandData);
 
     psGUIMerchantMessage(uint8_t command,
-                         csString commandData);
+                         std::string commandData);
 
     /// Crack this message off the network.
     psGUIMerchantMessage(MsgEntry* message);
@@ -2060,10 +2068,10 @@ public:
      * @param accessPointers A struct to a number of access pointers.
      * @return Return a human readable string for the message.
      */
-    virtual csString ToString(NetBase::AccessPointers* accessPointers);
+    virtual std::string ToString(NetBase::AccessPointers* accessPointers);
 
     uint8_t command;
-    csString commandData;
+    std::string commandData;
 };
 
 //--------------------------------------------------------------------------
@@ -2100,10 +2108,10 @@ public:
      */
     psGUIStorageMessage(uint32_t clientNum,
                         uint8_t command,
-                        csString commandData);
+                        std::string commandData);
 
     psGUIStorageMessage(uint8_t command,
-                        csString commandData);
+                        std::string commandData);
 
     /// Crack this message off the network.
     psGUIStorageMessage(MsgEntry* message);
@@ -2116,10 +2124,10 @@ public:
      * @param accessPointers A struct to a number of access pointers.
      * @return Return a human readable string for the message.
      */
-    virtual csString ToString(NetBase::AccessPointers* accessPointers);
+    virtual std::string ToString(NetBase::AccessPointers* accessPointers);
 
     uint8_t command;
-    csString commandData;
+    std::string commandData;
 };
 
 //--------------------------------------------------------------------------
@@ -2150,10 +2158,10 @@ public:
      */
     psGUIGroupMessage(uint32_t clientNum,
                       uint8_t command,
-                      csString commandData);
+                      std::string commandData);
 
     psGUIGroupMessage(uint8_t command,
-                      csString commandData);
+                      std::string commandData);
 
     /// Crack this message off the network.
     psGUIGroupMessage(MsgEntry* message);
@@ -2166,10 +2174,10 @@ public:
      * @param accessPointers A struct to a number of access pointers.
      * @return Return a human readable string for the message.
      */
-    virtual csString ToString(NetBase::AccessPointers* accessPointers);
+    virtual std::string ToString(NetBase::AccessPointers* accessPointers);
 
     uint8_t command;
-    csString commandData;
+    std::string commandData;
 };
 
 class psSpellCancelMessage : public psMessageCracker
@@ -2191,7 +2199,7 @@ public:
      * @param accessPointers A struct to a number of access pointers.
      * @return Return a human readable string for the message.
      */
-    virtual csString ToString(NetBase::AccessPointers* accessPointers);
+    virtual std::string ToString(NetBase::AccessPointers* accessPointers);
 };
 
 //--------------------------------------------------------------------------
@@ -2225,7 +2233,7 @@ public:
      * @param accessPointers A struct to a number of access pointers.
      * @return Return a human readable string for the message.
      */
-    virtual csString ToString(NetBase::AccessPointers* accessPointers);
+    virtual std::string ToString(NetBase::AccessPointers* accessPointers);
 
     int craftTime;///<The time when the crafting shall be ready
 };
@@ -2237,10 +2245,10 @@ class psAttackBookMessage : public psMessageCracker
 public:
     struct NetworkAttack
     {
-        csString name;
-        csString description;
-        csString type;
-        csString image;
+        std::string name;
+        std::string description;
+        std::string type;
+        std::string image;
     };
 
     psAttackBookMessage();
@@ -2256,12 +2264,12 @@ public:
      * @param accessPointers A struct to a number of access pointers.
      * @return Return a human readable string for the message.
      */
-    virtual csString ToString(NetBase::AccessPointers* accessPointers);
+    virtual std::string ToString(NetBase::AccessPointers* accessPointers);
 
-    void AddAttack(const csString& name, const csString& description, const csString& type, const csString& image);
-    void Construct(csStringSet* msgstrings);
+    void AddAttack(const std::string& name, const std::string& description, const std::string& type, const std::string& image);
+    void Construct(std::stringSet* msgstrings);
 
-    csArray<NetworkAttack> attacks;
+    std::vector<NetworkAttack> attacks;
 
 private:
     uint32_t size;
@@ -2273,12 +2281,12 @@ class psSpellBookMessage : public psMessageCracker
 public:
     struct NetworkSpell
     {
-        csString name;
-        csString description;
-        csString way;
+        std::string name;
+        std::string description;
+        std::string way;
         int realm;
-        csString glyphs[4];
-        csString image;
+        std::string glyphs[4];
+        std::string image;
     };
 
     psSpellBookMessage();
@@ -2293,12 +2301,12 @@ public:
      * @param accessPointers A struct to a number of access pointers.
      * @return Return a human readable string for the message.
      */
-    virtual csString ToString(NetBase::AccessPointers* accessPointers);
+    virtual std::string ToString(NetBase::AccessPointers* accessPointers);
 
-    void AddSpell(const csString &name, const csString &description, const csString &way, int realm, const csString &glyph0, const csString &glyph1, const csString &glyph2, const csString &glyph3, const csString &image);
-    void Construct(csStringSet* msgstrings);
+    void AddSpell(const std::string &name, const std::string &description, const std::string &way, int realm, const std::string &glyph0, const std::string &glyph1, const std::string &glyph2, const std::string &glyph3, const std::string &image);
+    void Construct(std::stringSet* msgstrings);
 
-    csArray<NetworkSpell> spells;
+    std::vector<NetworkSpell> spells;
 
 private:
     uint32_t size;
@@ -2321,7 +2329,7 @@ public:
      * @param accessPointers A struct to a number of access pointers.
      * @return Return a human readable string for the message.
      */
-    virtual csString ToString(NetBase::AccessPointers* accessPointers);
+    virtual std::string ToString(NetBase::AccessPointers* accessPointers);
 
     uint32_t glyph;
 };
@@ -2334,7 +2342,7 @@ public:
 class psSpellCastMessage : public psMessageCracker
 {
 public:
-    psSpellCastMessage(csString &spellName, float kFactor);
+    psSpellCastMessage(std::string &spellName, float kFactor);
     psSpellCastMessage(MsgEntry* me);
 
     PSF_DECLARE_MSG_FACTORY();
@@ -2345,9 +2353,9 @@ public:
      * @param accessPointers A struct to a number of access pointers.
      * @return Return a human readable string for the message.
      */
-    virtual csString ToString(NetBase::AccessPointers* accessPointers);
+    virtual std::string ToString(NetBase::AccessPointers* accessPointers);
 
-    csString spell;
+    std::string spell;
     float kFactor;
 };
 
@@ -2360,7 +2368,7 @@ public:
 
     psGlyphAssembleMessage(int slot0, int slot1, int slot2, int slot3, bool info = false);
     psGlyphAssembleMessage(uint32_t clientNum,
-                           csString spellName, csString image, csString description);
+                           std::string spellName, std::string image, std::string description);
     psGlyphAssembleMessage(MsgEntry* me);
     void FromClient(MsgEntry* me);
     void FromServer(MsgEntry* me);
@@ -2373,13 +2381,13 @@ public:
      * @param accessPointers A struct to a number of access pointers.
      * @return Return a human readable string for the message.
      */
-    virtual csString ToString(NetBase::AccessPointers* accessPointers);
+    virtual std::string ToString(NetBase::AccessPointers* accessPointers);
 
     int glyphs[4];
     bool info;
-    csString description;
-    csString name;
-    csString image;
+    std::string description;
+    std::string name;
+    std::string image;
 
 private:
     bool msgFromServer;
@@ -2392,8 +2400,8 @@ class psRequestGlyphsMessage : public psMessageCracker
 public:
     struct NetworkGlyph
     {
-        csString name;
-        csString image;
+        std::string name;
+        std::string image;
         uint32_t purifiedStatus;
         uint32_t way;
         uint32_t statID;
@@ -2412,14 +2420,14 @@ public:
      * @param accessPointers A struct to a number of access pointers.
      * @return Return a human readable string for the message.
      */
-    virtual csString ToString(NetBase::AccessPointers* accessPointers);
+    virtual std::string ToString(NetBase::AccessPointers* accessPointers);
 
-    void AddGlyph(csString name, csString image, int purifiedStatus,
+    void AddGlyph(std::string name, std::string image, int purifiedStatus,
                   int way, int statID);
 
     void Construct();
 
-    csArray<NetworkGlyph> glyphs;
+    std::vector<NetworkGlyph> glyphs;
 private:
     size_t size;
     uint32_t client;
@@ -2460,9 +2468,9 @@ public:
     }
 
     PSF_DECLARE_MSG_FACTORY();
-    csString ToString(NetBase::AccessPointers* /*accessPointers*/)
+    std::string ToString(NetBase::AccessPointers* /*accessPointers*/)
     {
-        csString msgtext;
+        std::string msgtext;
         msgtext.AppendFmt("Effect ID: %d", uid);
         return msgtext;
     }
@@ -2492,7 +2500,7 @@ public:
      *   @param scale3 Used for scalable effects.
      *   @param scale4 Used for scalable effects.
      */
-    psEffectMessage(uint32_t clientNum, const csString &effectName,
+    psEffectMessage(uint32_t clientNum, const std::string &effectName,
                     const csVector3 &effectOffset, EID anchorID,
                     EID targetID, uint32_t uid, float scale1 = 0.0, float scale2 = 0.0, float scale3 = 0.0, float scale4 = 0.0);
 
@@ -2509,7 +2517,7 @@ public:
      *   @param scale3 Used for scalable effects.
      *   @param scale4 Used for scalable effects.
      */
-    psEffectMessage(uint32_t clientNum, const csString &effectName,
+    psEffectMessage(uint32_t clientNum, const std::string &effectName,
                     const csVector3 &effectOffset, EID anchorID,
                     EID targetID, uint32_t duration, uint32_t uid, float scale1 = 0.0, float scale2 = 0.0, float scale3 = 0.0, float scale4 = 0.0);
 
@@ -2526,9 +2534,9 @@ public:
      * @param accessPointers A struct to a number of access pointers.
      * @return Return a human readable string for the message.
      */
-    virtual csString ToString(NetBase::AccessPointers* accessPointers);
+    virtual std::string ToString(NetBase::AccessPointers* accessPointers);
 
-    csString  name;
+    std::string  name;
     csVector3 offset;
     EID       anchorID;
     EID       targetID;
@@ -2565,7 +2573,7 @@ public:
      * @param accessPointers A struct to a number of access pointers.
      * @return Return a human readable string for the message.
      */
-    virtual csString ToString(NetBase::AccessPointers* accessPointers);
+    virtual std::string ToString(NetBase::AccessPointers* accessPointers);
 
     uint32_t clientNum;
     EID targetID;
@@ -2582,7 +2590,7 @@ public:
      * This hash table will be allocated during message cracking,
      * and \b must \b be \b deleted manually.
      */
-    csStringHashReversible* msgstrings;
+    std::stringHashReversible* msgstrings;
 
     /** Create psMessageBytes struct for outbound use */
     psMsgStringsMessage();
@@ -2605,7 +2613,7 @@ public:
      * @param accessPointers A struct to a number of access pointers.
      * @return Return a human readable string for the message.
      */
-    virtual csString ToString(NetBase::AccessPointers* accessPointers);
+    virtual std::string ToString(NetBase::AccessPointers* accessPointers);
 
     csMD5::Digest* digest;
     bool only_carrying_digest;
@@ -2621,19 +2629,19 @@ private:
 class psCharacterDataMessage : public psMessageCracker
 {
 public:
-    csString fullname;
-    csString race_name;
-    csString mesh_name;
-    csString traits;
-    csString equipment;
+    std::string fullname;
+    std::string race_name;
+    std::string mesh_name;
+    std::string traits;
+    std::string equipment;
 
     /** Create psMessageBytes struct for outbound use */
     psCharacterDataMessage(uint32_t clientnum,
-                           csString fullname,
-                           csString race_name,
-                           csString mesh_name,
-                           csString traits,
-                           csString equipment);
+                           std::string fullname,
+                           std::string race_name,
+                           std::string mesh_name,
+                           std::string traits,
+                           std::string equipment);
 
     /** Crack incoming psMessageBytes struct for inbound use */
     psCharacterDataMessage(MsgEntry* message);
@@ -2646,7 +2654,7 @@ public:
      * @param accessPointers A struct to a number of access pointers.
      * @return Return a human readable string for the message.
      */
-    virtual csString ToString(NetBase::AccessPointers* accessPointers);
+    virtual std::string ToString(NetBase::AccessPointers* accessPointers);
 };
 #endif
 
@@ -2682,7 +2690,7 @@ public:
      * @param accessPointers A struct to a number of access pointers.
      * @return Return a human readable string for the message.
      */
-    virtual csString ToString(NetBase::AccessPointers* accessPointers);
+    virtual std::string ToString(NetBase::AccessPointers* accessPointers);
 };
 /**
  * Messages sent from server to client containing each detailed
@@ -2732,7 +2740,7 @@ public:
      * @param accessPointers A struct to a number of access pointers.
      * @return Return a human readable string for the message.
      */
-    virtual csString ToString(NetBase::AccessPointers* accessPointers);
+    virtual std::string ToString(NetBase::AccessPointers* accessPointers);
 };
 
 //--------------------------------------------------------------------------
@@ -2762,14 +2770,14 @@ public:
      * @param accessPointers A struct to a number of access pointers.
      * @return Return a human readable string for the message.
      */
-    virtual csString ToString(NetBase::AccessPointers* accessPointers);
+    virtual std::string ToString(NetBase::AccessPointers* accessPointers);
 };
 //--------------------------------------------------------------------------
 
 class psStatDRMessage : public psMessageCracker
 {
 public:
-    psStatDRMessage(uint32_t clientnum, EID eid, csArray<float> fVitals, csArray<uint32_t> uiVitals, uint8_t version, int flags);
+    psStatDRMessage(uint32_t clientnum, EID eid, std::vector<float> fVitals, std::vector<uint32_t> uiVitals, uint8_t version, int flags);
 
     /** Send a request to the server for a full stat update.  */
     psStatDRMessage();
@@ -2785,7 +2793,7 @@ public:
      * @param accessPointers A struct to a number of access pointers.
      * @return Return a human readable string for the message.
      */
-    virtual csString ToString(NetBase::AccessPointers* accessPointers);
+    virtual std::string ToString(NetBase::AccessPointers* accessPointers);
 
     bool request; // Set to true if this is a request
     EID entityid;
@@ -2826,7 +2834,7 @@ public:
      * @param accessPointers A struct to a number of access pointers.
      * @return Return a human readable string for the message.
      */
-    virtual csString ToString(NetBase::AccessPointers* accessPointers);
+    virtual std::string ToString(NetBase::AccessPointers* accessPointers);
 
     bool  request; // True if this is a request for stats
     float hp;
@@ -2871,11 +2879,11 @@ public:
      *
      */
     psGUISkillMessage(uint8_t command,
-                      csString commandData);
+                      std::string commandData);
 
     psGUISkillMessage(uint32_t clientNum,
                       uint8_t command,
-                      csString commandData,
+                      std::string commandData,
                       psSkillCache* skills,
                       uint32_t str,
                       uint32_t end,
@@ -2907,10 +2915,10 @@ public:
      * @param accessPointers A struct to a number of access pointers.
      * @return Return a human readable string for the message.
      */
-    virtual csString ToString(NetBase::AccessPointers* accessPointers);
+    virtual std::string ToString(NetBase::AccessPointers* accessPointers);
 
     uint8_t command;
-    csString commandData;
+    std::string commandData;
     psSkillCache skillCache;
 
     unsigned int strength;
@@ -2996,7 +3004,7 @@ public:
      * @param accessPointers A struct to a number of access pointers.
      * @return Return a human readable string for the message.
      */
-    virtual csString ToString(NetBase::AccessPointers* accessPointers);
+    virtual std::string ToString(NetBase::AccessPointers* accessPointers);
 
     uint8_t command;
     bool guild;
@@ -3053,11 +3061,11 @@ public:
      *
      */
     psPetSkillMessage(uint8_t command,
-                      csString commandData);
+                      std::string commandData);
 
     psPetSkillMessage(uint32_t clientNum,
                       uint8_t command,
-                      csString commandData,
+                      std::string commandData,
                       uint32_t str,
                       uint32_t end,
                       uint32_t agi,
@@ -3086,10 +3094,10 @@ public:
      * @param accessPointers A struct to a number of access pointers.
      * @return Return a human readable string for the message.
      */
-    virtual csString ToString(NetBase::AccessPointers* accessPointers);
+    virtual std::string ToString(NetBase::AccessPointers* accessPointers);
 
     uint8_t command;
-    csString commandData;
+    std::string commandData;
 
     unsigned int strength;
     unsigned int endurance;
@@ -3121,10 +3129,10 @@ protected:
     void WriteDRInfo(uint32_t client, EID mappedid,
                      bool on_ground, uint8_t mode, uint8_t counter,
                      const csVector3 &pos, float yrot, iSector* sector,
-                     csString sectorName, const csVector3 &vel, csVector3 &worldVel,
-                     float ang_vel, csStringSet* msgstrings, bool donewriting=true);
+                     std::string sectorName, const csVector3 &vel, csVector3 &worldVel,
+                     float ang_vel, std::stringSet* msgstrings, bool donewriting=true);
     void ReadDRInfo(MsgEntry* me, NetBase::AccessPointers* accessPointers);
-    void CreateMsgEntry(uint32_t client, NetBase::AccessPointers* accessPointers, iSector* sector, csString sectorName);
+    void CreateMsgEntry(uint32_t client, NetBase::AccessPointers* accessPointers, iSector* sector, std::string sectorName);
 
     /// Flags indicating what components are packed in this message
     enum DRDataFlags
@@ -3154,7 +3162,7 @@ public:
               worldVel;     ///< World velocity vector
     float yrot;             ///< Rotation around Y-axis in radians
     iSector* sector;        ///< Ptr to sector for mesh
-    csString sectorName;    ///< Name of the sector
+    std::string sectorName;    ///< Name of the sector
     float ang_vel;          ///< Angular velocity of Yrot member changing
     EID entityid;           ///< The mapped id of the entity in question
 
@@ -3164,7 +3172,7 @@ public:
                 psLinearMovement* linmove, uint8_t mode=0);
     psDRMessage(uint32_t client, EID mappedid,
                 bool on_ground, uint8_t mode, uint8_t counter,
-                const csVector3 &pos, float yrot, iSector* sector, csString sectorName,
+                const csVector3 &pos, float yrot, iSector* sector, std::string sectorName,
                 const csVector3 &vel, csVector3 &worldVel, float ang_vel,
                 NetBase::AccessPointers* accessPointers);
     psDRMessage(void* data, int size, NetBase::AccessPointers* accessPointers);
@@ -3183,7 +3191,7 @@ public:
      * @param accessPointers A struct to a number of access pointers.
      * @return Return a human readable string for the message.
      */
-    virtual csString ToString(NetBase::AccessPointers* accessPointers);
+    virtual std::string ToString(NetBase::AccessPointers* accessPointers);
 };
 
 //-----------------------------------------------------------------------------
@@ -3194,18 +3202,18 @@ public:
     csVector3 pos;           ///< Position vector
     float yrot;              ///< Rotation around Y-axis in radians
     iSector* sector;         ///< Ptr to sector for mesh
-    csString sectorName;     ///< Name of the sector
-    csString backgroundname; ///< Name of the background to use instead of the normal one in delay.
+    std::string sectorName;     ///< Name of the sector
+    std::string backgroundname; ///< Name of the background to use instead of the normal one in delay.
     uint32_t loadTime;       ///< time to wait even if there is no need to load
     csVector2 start;         ///<Start point of anmiation
     csVector2 dest;          ///<Destination point of animation
-    csString loadWidget;     ///< The widget to replace the load window with.
+    std::string loadWidget;     ///< The widget to replace the load window with.
     float    vel;            ///< The velocity of the actor
 
     psForcePositionMessage() { }
     psForcePositionMessage(uint32_t client, uint8_t sequence,
                            const csVector3 &pos, float yRot, iSector* sector, float vel,
-                           csStringSet* msgstrings, uint32_t time = 0, csString loadBackground = "", csVector2 start = 0, csVector2 dest = 0, csString loadWidget = "");
+                           std::stringSet* msgstrings, uint32_t time = 0, std::string loadBackground = "", csVector2 start = 0, csVector2 dest = 0, std::string loadWidget = "");
     psForcePositionMessage(MsgEntry* me, NetBase::AccessPointers* accessPointers);
 
     PSF_DECLARE_MSG_FACTORY();
@@ -3218,7 +3226,7 @@ public:
      * @param accessPointers A struct to a number of access pointers.
      * @return Return a human readable string for the message.
      */
-    virtual csString ToString(NetBase::AccessPointers* accessPointers);
+    virtual std::string ToString(NetBase::AccessPointers* accessPointers);
 };
 
 //-----------------------------------------------------------------------------
@@ -3237,7 +3245,7 @@ public:
      * @param accessPointers A struct to a number of access pointers.
      * @return Return a human readable string for the message.
      */
-    virtual csString ToString(NetBase::AccessPointers* accessPointers);
+    virtual std::string ToString(NetBase::AccessPointers* accessPointers);
 };
 
 class psRequestAllObjects : public psMessageCracker
@@ -3254,7 +3262,7 @@ public:
      * @param accessPointers A struct to a number of access pointers.
      * @return Return a human readable string for the message.
      */
-    virtual csString ToString(NetBase::AccessPointers* accessPointers);
+    virtual std::string ToString(NetBase::AccessPointers* accessPointers);
 };
 
 class psPersistWorld : public psMessageCracker
@@ -3271,9 +3279,9 @@ public:
      * @param accessPointers A struct to a number of access pointers.
      * @return Return a human readable string for the message.
      */
-    virtual csString ToString(NetBase::AccessPointers* accessPointers);
+    virtual std::string ToString(NetBase::AccessPointers* accessPointers);
 
-    csString sector;
+    std::string sector;
     csVector3 pos;
 };
 
@@ -3297,7 +3305,7 @@ public:
      * @param accessPointers A struct to a number of access pointers.
      * @return Return a human readable string for the message.
      */
-    virtual csString ToString(NetBase::AccessPointers* accessPointers);
+    virtual std::string ToString(NetBase::AccessPointers* accessPointers);
 
 };
 
@@ -3322,7 +3330,7 @@ public:
      * @param accessPointers A struct to a number of access pointers.
      * @return Return a human readable string for the message.
      */
-    virtual csString ToString(NetBase::AccessPointers* accessPointers);
+    virtual std::string ToString(NetBase::AccessPointers* accessPointers);
 
     /**
      *  Appends the new entity message to the current pending message.
@@ -3377,7 +3385,7 @@ public:
                    const char* texParts,
                    const char* equipmentParts,
                    uint8_t counter,
-                   EID mappedid, csStringSet* msgstrings, psLinearMovement* linmove,
+                   EID mappedid, std::stringSet* msgstrings, psLinearMovement* linmove,
                    uint8_t movementMode,
                    uint8_t serverMode,
                    PID playerID = 0, uint32_t groupID = 0, EID ownerEID = 0,
@@ -3393,7 +3401,7 @@ public:
      * @param accessPointers A struct to a number of access pointers.
      * @return Return a human readable string for the message.
      */
-    virtual csString ToString(NetBase::AccessPointers* accessPointers);
+    virtual std::string ToString(NetBase::AccessPointers* accessPointers);
 
     /**
      * Used to insert instance into the message buffer after creation.
@@ -3405,21 +3413,21 @@ public:
      */
     static uint32_t PeekEID(MsgEntry* me);
 
-    csString name;
-    csString guild;
-    csString factname;
-    csString matname;
-    csString race;
-    csString mountFactname;
-    csString MounterAnim;               ///< The anim to be used by the mounter.
+    std::string name;
+    std::string guild;
+    std::string factname;
+    std::string matname;
+    std::string race;
+    std::string mountFactname;
+    std::string MounterAnim;               ///< The anim to be used by the mounter.
     unsigned short int gender;
-    csString helmGroup;                 ///< Used for helm groupings.
-    csString bracerGroup;               ///< Used for bracers groupings.
-    csString beltGroup;                 ///< Used for belt groupings.
-    csString cloakGroup;                ///< Used for cloak groupings.
+    std::string helmGroup;                 ///< Used for helm groupings.
+    std::string bracerGroup;               ///< Used for bracers groupings.
+    std::string beltGroup;                 ///< Used for belt groupings.
+    std::string cloakGroup;                ///< Used for cloak groupings.
     csVector3 top, bottom, offset;
-    csString texParts;
-    csString equipment;
+    std::string texParts;
+    std::string equipment;
     int type;
     int masqueradeType;
     uint8_t serverMode;
@@ -3462,7 +3470,7 @@ public:
                   float yRot,
                   float zRot,
                   uint32_t flags,
-                  csStringSet* msgstrings,
+                  std::stringSet* msgstrings,
                   uint32_t tribeid = 0,
                   uint32_t uid = 0
                  );
@@ -3477,12 +3485,12 @@ public:
      * @param accessPointers A struct to a number of access pointers.
      * @return Return a human readable string for the message.
      */
-    virtual csString ToString(NetBase::AccessPointers* accessPointers);
+    virtual std::string ToString(NetBase::AccessPointers* accessPointers);
 
-    csString name;
-    csString factname;
-    csString matname;
-    csString sector;
+    std::string name;
+    std::string factname;
+    std::string matname;
+    std::string sector;
     csVector3 pos;
     float xRot;
     float yRot;
@@ -3515,11 +3523,11 @@ public:
      * @param accessPointers A struct to a number of access pointers.
      * @return Return a human readable string for the message.
      */
-    virtual csString ToString(NetBase::AccessPointers* accessPointers);
+    virtual std::string ToString(NetBase::AccessPointers* accessPointers);
 
-    csString name;
-    csString sector;
-    csString mesh;
+    std::string name;
+    std::string sector;
+    std::string mesh;
     EID eid;
     uint32_t type;
 };
@@ -3538,7 +3546,7 @@ public:
      * @param accessPointers A struct to a number of access pointers.
      * @return Return a human readable string for the message.
      */
-    virtual csString ToString(NetBase::AccessPointers* accessPointers);
+    virtual std::string ToString(NetBase::AccessPointers* accessPointers);
 
     EID objectEID;
 };
@@ -3550,7 +3558,7 @@ class psBuddyListMsg : public psMessageCracker
 public:
     struct BuddyData
     {
-        csString name;
+        std::string name;
         bool online;
     };
 
@@ -3565,12 +3573,12 @@ public:
      * @param accessPointers A struct to a number of access pointers.
      * @return Return a human readable string for the message.
      */
-    virtual csString ToString(NetBase::AccessPointers* accessPointers);
+    virtual std::string ToString(NetBase::AccessPointers* accessPointers);
 
     void AddBuddy(int num, const char* name, bool onlineStatus);
     void Build();
 
-    csArray<BuddyData> buddies;
+    std::vector<BuddyData> buddies;
 };
 
 
@@ -3578,7 +3586,7 @@ public:
 class psBuddyStatus : public psMessageCracker
 {
 public:
-    psBuddyStatus(uint32_t clientNum, csString &buddyName, bool online)
+    psBuddyStatus(uint32_t clientNum, std::string &buddyName, bool online)
     {
         msg.AttachNew(new MsgEntry(buddyName.Length()+1 + sizeof(bool)));
 
@@ -3603,16 +3611,16 @@ public:
      * @param accessPointers A struct to a number of access pointers.
      * @return Return a human readable string for the message.
      */
-    virtual csString ToString(NetBase::AccessPointers* accessPointers);
+    virtual std::string ToString(NetBase::AccessPointers* accessPointers);
 
-    csString buddy;
+    std::string buddy;
     bool onlineStatus;
 };
 
 class psMOTDMessage : public psMessageCracker
 {
 public:
-    psMOTDMessage(uint32_t clientNum, const csString &tipMsg, const csString &motdMsg, const csString &guildMsg, const csString &guild)
+    psMOTDMessage(uint32_t clientNum, const std::string &tipMsg, const std::string &motdMsg, const std::string &guildMsg, const std::string &guild)
     {
         msg.AttachNew(new MsgEntry(tipMsg.Length()+1 + motdMsg.Length()+1 + guildMsg.Length()+1 + guild.Length() +1));
 
@@ -3641,12 +3649,12 @@ public:
      * @param accessPointers A struct to a number of access pointers.
      * @return Return a human readable string for the message.
      */
-    virtual csString ToString(NetBase::AccessPointers* accessPointers);
+    virtual std::string ToString(NetBase::AccessPointers* accessPointers);
 
-    csString tip;
-    csString motd;
-    csString guildmotd;
-    csString guild;
+    std::string tip;
+    std::string motd;
+    std::string guildmotd;
+    std::string guild;
 };
 
 class psMOTDRequestMessage : public psMessageCracker
@@ -3669,16 +3677,16 @@ public:
      * @param accessPointers A struct to a number of access pointers.
      * @return Return a human readable string for the message.
      */
-    virtual csString ToString(NetBase::AccessPointers* accessPointers);
+    virtual std::string ToString(NetBase::AccessPointers* accessPointers);
 };
 
 class psQuestionResponseMsg : public psMessageCracker
 {
 public:
     uint32_t questionID;
-    csString answer;
+    std::string answer;
 
-    psQuestionResponseMsg(int clientnum,uint32_t questionID,const csString &answer)
+    psQuestionResponseMsg(int clientnum,uint32_t questionID,const std::string &answer)
     {
         msg.AttachNew(new MsgEntry(sizeof(questionID)+answer.Length()+1));
         msg->SetType(MSGTYPE_QUESTIONRESPONSE);
@@ -3701,7 +3709,7 @@ public:
      * @param accessPointers A struct to a number of access pointers.
      * @return Return a human readable string for the message.
      */
-    virtual csString ToString(NetBase::AccessPointers* accessPointers);
+    virtual std::string ToString(NetBase::AccessPointers* accessPointers);
 };
 
 class psQuestionMessage : public psMessageCracker
@@ -3721,7 +3729,7 @@ public:
     };
 
     uint32_t questionID;
-    csString question;     // some string - its format depends on 'type'
+    std::string question;     // some string - its format depends on 'type'
     questionType_t type;
 
     psQuestionMessage(int clientnum,
@@ -3754,15 +3762,15 @@ public:
      * @param accessPointers A struct to a number of access pointers.
      * @return Return a human readable string for the message.
      */
-    virtual csString ToString(NetBase::AccessPointers* accessPointers);
+    virtual std::string ToString(NetBase::AccessPointers* accessPointers);
 };
 
 class psAdviceMessage : public psMessageCracker
 {
 public:
-    csString sCommand;
-    csString sTarget;
-    csString sMessage;
+    std::string sCommand;
+    std::string sTarget;
+    std::string sMessage;
 
     psAdviceMessage(int clientNum, const char* command, const char* target, const char* message)
     {
@@ -3795,7 +3803,7 @@ public:
      * @param accessPointers A struct to a number of access pointers.
      * @return Return a human readable string for the message.
      */
-    virtual csString ToString(NetBase::AccessPointers* accessPointers);
+    virtual std::string ToString(NetBase::AccessPointers* accessPointers);
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -3811,7 +3819,7 @@ public:
     
     enum commandType { Add, Remove, List };
 
-    psGUIActiveMagicMessage(uint32_t clientNum, csArray<ActiveSpell*>& spells, uint32_t index, csTicks serverTime )
+    psGUIActiveMagicMessage(uint32_t clientNum, std::vector<ActiveSpell*>& spells, uint32_t index, csTicks serverTime )
     {
         //                  MSGTYPE_ACTIVEMAGIC + clientNum        + command         + valid        + index            + spellCount;
         size_t    msgSize = sizeof(uint8_t)     + sizeof(uint32_t) + sizeof(uint8_t) + sizeof(bool) + sizeof(uint32_t) + sizeof(uint32_t); 
@@ -3884,16 +3892,16 @@ public:
      * @param accessPointers A struct to a number of access pointers.
      * @return Return a human readable string for the message.
      */
-    virtual csString ToString(NetBase::AccessPointers* accessPointers);
+    virtual std::string ToString(NetBase::AccessPointers* accessPointers);
 
     uint32_t             index;
     commandType command;
-    csArray<SPELL_TYPE>  type;
-    csArray<uint32>      duration;
-    csArray<uint32>      registrationTime;
+    std::vector<SPELL_TYPE>  type;
+    std::vector<uint32>      duration;
+    std::vector<uint32>      registrationTime;
     uint32               serverTime;
-    csArray<csString>    name;
-    csArray<csString>    image;
+    std::vector<std::string>    name;
+    std::vector<std::string>    image;
 };
 
 //-----------------------------------------------------------------------------
@@ -3972,7 +3980,7 @@ public:
      * @param accessPointers A struct to a number of access pointers.
      * @return Return a human readable string for the message.
      */
-    virtual csString ToString(NetBase::AccessPointers* accessPointers);
+    virtual std::string ToString(NetBase::AccessPointers* accessPointers);
 
     int fromContainer;
     int fromSlot;
@@ -3988,7 +3996,7 @@ public:
 class psCmdDropMessage : public psMessageCracker
 {
 public:
-    psCmdDropMessage(int quantity, csString &itemName, bool container, bool guarded, bool inplace);
+    psCmdDropMessage(int quantity, std::string &itemName, bool container, bool guarded, bool inplace);
     psCmdDropMessage(MsgEntry* me);
 
     PSF_DECLARE_MSG_FACTORY();
@@ -3999,10 +4007,10 @@ public:
      * @param accessPointers A struct to a number of access pointers.
      * @return Return a human readable string for the message.
      */
-    virtual csString ToString(NetBase::AccessPointers* accessPointers);
+    virtual std::string ToString(NetBase::AccessPointers* accessPointers);
 
     int quantity;
-    csString itemName;
+    std::string itemName;
 
     bool container;
     bool guarded;
@@ -4036,13 +4044,13 @@ public:
      * @param accessPointers A struct to a number of access pointers.
      * @return Return a human readable string for the message.
      */
-    virtual csString ToString(NetBase::AccessPointers* accessPointers);
+    virtual std::string ToString(NetBase::AccessPointers* accessPointers);
 };
 
 class psGuildMOTDSetMessage : public psMessageCracker
 {
 public:
-    psGuildMOTDSetMessage(csString &guildMsg,csString &guild)
+    psGuildMOTDSetMessage(std::string &guildMsg,std::string &guild)
     {
         msg.AttachNew(new MsgEntry(guildMsg.Length()+1 + guild.Length() +1));
 
@@ -4070,10 +4078,10 @@ public:
      * @param accessPointers A struct to a number of access pointers.
      * @return Return a human readable string for the message.
      */
-    virtual csString ToString(NetBase::AccessPointers* accessPointers);
+    virtual std::string ToString(NetBase::AccessPointers* accessPointers);
 
-    csString guildmotd;
-    csString guild;
+    std::string guildmotd;
+    std::string guild;
 };
 
 class psCharacterDetailsMessage : public psMessageCracker
@@ -4082,11 +4090,11 @@ public:
     struct NetworkDetailSkill
     {
         int category;
-        csString text;
+        std::string text;
     };
 
-    psCharacterDetailsMessage(int clientnum, const csString &name2s,unsigned short int gender2s,const csString &race2s,
-                              const csString &desc2s, const csArray<NetworkDetailSkill> &skills2s, const csString &desc_ooc, const csString &creationinfo, const csString &requestor);
+    psCharacterDetailsMessage(int clientnum, const std::string &name2s,unsigned short int gender2s,const std::string &race2s,
+                              const std::string &desc2s, const std::vector<NetworkDetailSkill> &skills2s, const std::string &desc_ooc, const std::string &creationinfo, const std::string &requestor);
     psCharacterDetailsMessage(MsgEntry* me);
 
     PSF_DECLARE_MSG_FACTORY();
@@ -4097,23 +4105,23 @@ public:
      * @param accessPointers A struct to a number of access pointers.
      * @return Return a human readable string for the message.
      */
-    virtual csString ToString(NetBase::AccessPointers* accessPointers);
+    virtual std::string ToString(NetBase::AccessPointers* accessPointers);
 
-    csString name;
+    std::string name;
     unsigned short int gender;
-    csString race;
-    csString desc;
-    csString desc_ooc;
-    csString creationinfo;
-    csArray<NetworkDetailSkill> skills;
+    std::string race;
+    std::string desc;
+    std::string desc_ooc;
+    std::string creationinfo;
+    std::vector<NetworkDetailSkill> skills;
 
-    csString requestor;  // Identifies which part of system initiated this
+    std::string requestor;  // Identifies which part of system initiated this
 };
 
 class psCharacterDetailsRequestMessage : public psMessageCracker
 {
 public:
-    psCharacterDetailsRequestMessage(bool myself, bool simple, const csString &requestor)
+    psCharacterDetailsRequestMessage(bool myself, bool simple, const std::string &requestor)
     {
         //If myself = true, the server sends the information about the player
         //If myself = false, the server sends the information about the target
@@ -4141,11 +4149,11 @@ public:
      * @param accessPointers A struct to a number of access pointers.
      * @return Return a human readable string for the message.
      */
-    virtual csString ToString(NetBase::AccessPointers* accessPointers);
+    virtual std::string ToString(NetBase::AccessPointers* accessPointers);
 
     bool isMe;
     bool isSimple;          /// Weather simple description or full is requested
-    csString requestor;     /// Identifies which part of system initiated this
+    std::string requestor;     /// Identifies which part of system initiated this
 };
 
 enum DESCTYPE
@@ -4158,7 +4166,7 @@ enum DESCTYPE
 class psCharacterDescriptionUpdateMessage : public psMessageCracker
 {
 public:
-    psCharacterDescriptionUpdateMessage(csString &newValue, DESCTYPE desctype)
+    psCharacterDescriptionUpdateMessage(std::string &newValue, DESCTYPE desctype)
     {
 
         msg.AttachNew(new MsgEntry(newValue.Length() +1 + sizeof(uint8_t)));
@@ -4183,9 +4191,9 @@ public:
      * @param accessPointers A struct to a number of access pointers.
      * @return Return a human readable string for the message.
      */
-    virtual csString ToString(NetBase::AccessPointers* accessPointers);
+    virtual std::string ToString(NetBase::AccessPointers* accessPointers);
 
-    csString newValue;
+    std::string newValue;
     DESCTYPE desctype;
 };
 
@@ -4205,7 +4213,7 @@ public:
      * @param accessPointers A struct to a number of access pointers.
      * @return Return a human readable string for the message.
      */
-    virtual csString ToString(NetBase::AccessPointers* accessPointers);
+    virtual std::string ToString(NetBase::AccessPointers* accessPointers);
 
     const char* name;
     const char* description;
@@ -4268,7 +4276,7 @@ public:
      * @param accessPointers A struct to a number of access pointers.
      * @return Return a human readable string for the message.
      */
-    virtual csString ToString(NetBase::AccessPointers* accessPointers);
+    virtual std::string ToString(NetBase::AccessPointers* accessPointers);
 
     /// The name of the item or container.
     const char* itemName;
@@ -4367,7 +4375,7 @@ public:
      * @param accessPointers A struct to a number of access pointers.
      * @return Return a human readable string for the message.
      */
-    virtual csString ToString(NetBase::AccessPointers* accessPointers);
+    virtual std::string ToString(NetBase::AccessPointers* accessPointers);
 
     /// The name of the item or container.
     const char* itemName;
@@ -4409,20 +4417,20 @@ public:
     void AddContents(const char* name, const char* meshName, const char* materialName, const char* icon, int purifyStatus, int slot, int stack);
 
     /// Build the message ( assumes base item is a container ).
-    void ConstructMsg(csStringSet* msgstrings);
+    void ConstructMsg(std::stringSet* msgstrings);
 
     struct ContainerContents
     {
-        csString name;
-        csString icon;
-        csString meshName;
-        csString materialName;
+        std::string name;
+        std::string icon;
+        std::string meshName;
+        std::string materialName;
         int slotID;
         int stackCount;
         int purifyStatus;
     };
 
-    csArray<ContainerContents> contents;
+    std::vector<ContainerContents> contents;
 
 private:
     enum
@@ -4453,7 +4461,7 @@ public:
      * @param ownerID The GEM entity ID of the owner
      * @param msgstrings A message strings cache.
      */
-    psViewItemUpdate(uint32_t to, EID containerID, uint32_t slotID, bool clearSlot, const char* itemName, const char* icon, const char* meshName, const char* materialName, uint32_t stackCount, EID ownerID, csStringSet* msgstrings);
+    psViewItemUpdate(uint32_t to, EID containerID, uint32_t slotID, bool clearSlot, const char* itemName, const char* icon, const char* meshName, const char* materialName, uint32_t stackCount, EID ownerID, std::stringSet* msgstrings);
 
     /// Crack out the details from the message.
     psViewItemUpdate(MsgEntry* me, NetBase::AccessPointers* accessPointers);
@@ -4466,7 +4474,7 @@ public:
      * @param accessPointers A struct to a number of access pointers.
      * @return Return a human readable string for the message.
      */
-    virtual csString ToString(NetBase::AccessPointers* accessPointers);
+    virtual std::string ToString(NetBase::AccessPointers* accessPointers);
 
 //    /// Running count of message size. Used for constructing the outgoing message.
 //    int msgSize;
@@ -4478,10 +4486,10 @@ public:
     EID containerID;
 
     /// Item info
-    csString name;
-    csString icon;
-    csString meshName;
-    csString materialName;
+    std::string name;
+    std::string icon;
+    std::string meshName;
+    std::string materialName;
     int slotID;
     int stackCount;
     EID ownerID;
@@ -4499,24 +4507,24 @@ public:
     /**
      * 'Request to Save' message, from client to server
      */
-    psWriteBookMessage(int slotID, int containerID, csString &title, csString &content);
+    psWriteBookMessage(int slotID, int containerID, std::string &title, std::string &content);
     /**
      * Response from server, if success is false then content is the error message
      */
-    psWriteBookMessage(uint32_t clientNum, csString &title, csString &content, bool success,  int slotID, int containerID);
+    psWriteBookMessage(uint32_t clientNum, std::string &title, std::string &content, bool success,  int slotID, int containerID);
     /**
      * Response to Save from server to client.
      */
-    psWriteBookMessage(uint32_t clientNum, csString &title, bool success);
+    psWriteBookMessage(uint32_t clientNum, std::string &title, bool success);
 
     psWriteBookMessage(MsgEntry* me);
 
     PSF_DECLARE_MSG_FACTORY();
 
-    virtual csString ToString(NetBase::AccessPointers* accessPointers);
+    virtual std::string ToString(NetBase::AccessPointers* accessPointers);
 
     uint8_t messagetype;
-    csString title, content;
+    std::string title, content;
     int slotID;
     int containerID;
     bool success;
@@ -4533,7 +4541,7 @@ public:
 class psReadBookTextMessage : public psMessageCracker
 {
 public:
-    psReadBookTextMessage(uint32_t clientNum, csString &itemName, csString &bookText, bool canWrite, int slotID, int containerID, csString backgroundImg);
+    psReadBookTextMessage(uint32_t clientNum, std::string &itemName, std::string &bookText, bool canWrite, int slotID, int containerID, std::string backgroundImg);
 
     /** Crack out the details from the message.
       * This will look at the packet and figure out if it is a single item or a container.
@@ -4549,17 +4557,17 @@ public:
      * @param accessPointers A struct to a number of access pointers.
      * @return Return a human readable string for the message.
      */
-    virtual csString ToString(NetBase::AccessPointers* accessPointers);
+    virtual std::string ToString(NetBase::AccessPointers* accessPointers);
 
-    csString name;
-    csString text;
+    std::string name;
+    std::string text;
     ///whether or not to display the 'edit' button
     bool canWrite;
     ///to identify which item this is later
     int slotID;
     int containerID;
     ///The image which will be shown as a background of this book.
-    csString backgroundImg;
+    std::string backgroundImg;
 };
 
 //--------------------------------------------------------------------------
@@ -4573,7 +4581,7 @@ public:
         selectReward
     };
 
-    psQuestRewardMessage(uint32_t clientnum, csString &newValue, uint8_t type)
+    psQuestRewardMessage(uint32_t clientnum, std::string &newValue, uint8_t type)
     {
         msg.AttachNew(new MsgEntry(newValue.Length() + 1 + sizeof(uint8_t)));
         msg->SetType(MSGTYPE_QUESTREWARD);
@@ -4596,10 +4604,10 @@ public:
      * @param accessPointers A struct to a number of access pointers.
      * @return Return a human readable string for the message.
      */
-    virtual csString ToString(NetBase::AccessPointers* accessPointers);
+    virtual std::string ToString(NetBase::AccessPointers* accessPointers);
 
     int msgType;
-    csString newValue;
+    std::string newValue;
 };
 
 //--------------------------------------------------------------------------
@@ -4620,7 +4628,7 @@ public:
      * @param accessPointers A struct to a number of access pointers.
      * @return Return a human readable string for the message.
      */
-    virtual csString ToString(NetBase::AccessPointers* accessPointers);
+    virtual std::string ToString(NetBase::AccessPointers* accessPointers);
 
     int container;
 
@@ -4641,7 +4649,7 @@ public:
     psExchangeRequestMsg(bool withPlayer);
 
     /// From the server to the client.
-    psExchangeRequestMsg(uint32_t client, csString &name, bool withPlayer);
+    psExchangeRequestMsg(uint32_t client, std::string &name, bool withPlayer);
 
     PSF_DECLARE_MSG_FACTORY();
 
@@ -4651,12 +4659,12 @@ public:
      * @param accessPointers A struct to a number of access pointers.
      * @return Return a human readable string for the message.
      */
-    virtual csString ToString(NetBase::AccessPointers* accessPointers);
+    virtual std::string ToString(NetBase::AccessPointers* accessPointers);
 
 
     psExchangeRequestMsg(MsgEntry* me);
 
-    csString player;
+    std::string player;
     bool withPlayer;
 };
 
@@ -4668,14 +4676,14 @@ class psExchangeAddItemMsg : public psMessageCracker
 {
 public:
     psExchangeAddItemMsg(uint32_t clientNum,
-                         const csString &name,
-                         const csString &meshFactName,
-                         const csString &materialName,
+                         const std::string &name,
+                         const std::string &meshFactName,
+                         const std::string &materialName,
                          int containerID,
                          int slot,
                          int stackcount,
-                         const csString &icon,
-                         csStringSet* msgstrings);
+                         const std::string &icon,
+                         std::stringSet* msgstrings);
 
     psExchangeAddItemMsg(MsgEntry* me, NetBase::AccessPointers* accessPointers);
 
@@ -4687,15 +4695,15 @@ public:
      * @param accessPointers A struct to a number of access pointers.
      * @return Return a human readable string for the message.
      */
-    virtual csString ToString(NetBase::AccessPointers* accessPointers);
+    virtual std::string ToString(NetBase::AccessPointers* accessPointers);
 
-    csString name;
-    csString meshFactName;
-    csString materialName;
+    std::string name;
+    std::string meshFactName;
+    std::string materialName;
     int container;
     int slot;
     int stackCount;
-    csString icon;
+    std::string icon;
 };
 
 //------------------------------------------------------------------------------
@@ -4717,7 +4725,7 @@ public:
      * @param accessPointers A struct to a number of access pointers.
      * @return Return a human readable string for the message.
      */
-    virtual csString ToString(NetBase::AccessPointers* accessPointers);
+    virtual std::string ToString(NetBase::AccessPointers* accessPointers);
 
     int container;          // CONTAINER_EXCHANGE_*
     int slot;
@@ -4740,7 +4748,7 @@ public:
      * @param accessPointers A struct to a number of access pointers.
      * @return Return a human readable string for the message.
      */
-    virtual csString ToString(NetBase::AccessPointers* accessPointers);
+    virtual std::string ToString(NetBase::AccessPointers* accessPointers);
 };
 
 //------------------------------------------------------------------------------
@@ -4759,7 +4767,7 @@ public:
      * @param accessPointers A struct to a number of access pointers.
      * @return Return a human readable string for the message.
      */
-    virtual csString ToString(NetBase::AccessPointers* accessPointers);
+    virtual std::string ToString(NetBase::AccessPointers* accessPointers);
 
     bool playerAccept;
     bool otherAccept;
@@ -4781,7 +4789,7 @@ public:
      * @param accessPointers A struct to a number of access pointers.
      * @return Return a human readable string for the message.
      */
-    virtual csString ToString(NetBase::AccessPointers* accessPointers);
+    virtual std::string ToString(NetBase::AccessPointers* accessPointers);
 };
 
 
@@ -4801,10 +4809,10 @@ public:
      * @param accessPointers A struct to a number of access pointers.
      * @return Return a human readable string for the message.
      */
-    virtual csString ToString(NetBase::AccessPointers* accessPointers);
+    virtual std::string ToString(NetBase::AccessPointers* accessPointers);
 
     EID objectID;
-    csString newObjName;
+    std::string newObjName;
 };
 
 class psUpdatePlayerGuildMessage : public psMessageCracker
@@ -4822,12 +4830,12 @@ public:
      * @param accessPointers A struct to a number of access pointers.
      * @return Return a human readable string for the message.
      */
-    virtual csString ToString(NetBase::AccessPointers* accessPointers);
+    virtual std::string ToString(NetBase::AccessPointers* accessPointers);
 
     void AddPlayer(EID id); // Adds an object
 
-    csArray<uint32_t> objectID; // Array with objects
-    csString newGuildName;
+    std::vector<uint32_t> objectID; // Array with objects
+    std::string newGuildName;
 };
 
 
@@ -4845,7 +4853,7 @@ public:
      * @param accessPointers A struct to a number of access pointers.
      * @return Return a human readable string for the message.
      */
-    virtual csString ToString(NetBase::AccessPointers* accessPointers);
+    virtual std::string ToString(NetBase::AccessPointers* accessPointers);
 
     EID objectID;
     uint32_t groupID;
@@ -4881,11 +4889,11 @@ public:
      * @param accessPointers A struct to a number of access pointers.
      * @return Return a human readable string for the message.
      */
-    virtual csString ToString(NetBase::AccessPointers* accessPointers);
+    virtual std::string ToString(NetBase::AccessPointers* accessPointers);
 
-    csString firstName;
-    csString lastName;
-    csString reason;
+    std::string firstName;
+    std::string lastName;
+    std::string reason;
     bool accepted;
 
 private:
@@ -4913,7 +4921,7 @@ public:
      * @param accessPointers A struct to a number of access pointers.
      * @return Return a human readable string for the message.
      */
-    virtual csString ToString(NetBase::AccessPointers* accessPointers);
+    virtual std::string ToString(NetBase::AccessPointers* accessPointers);
 
     uint32_t id;
     uint8_t flags;
@@ -4935,7 +4943,7 @@ public:
      * @param accessPointers A struct to a number of access pointers.
      * @return Return a human readable string for the message.
      */
-    virtual csString ToString(NetBase::AccessPointers* accessPointers);
+    virtual std::string ToString(NetBase::AccessPointers* accessPointers);
 };
 
 //-----------------------------------------------------------------------------
@@ -4954,9 +4962,9 @@ public:
      * @param accessPointers A struct to a number of access pointers.
      * @return Return a human readable string for the message.
      */
-    virtual csString ToString(NetBase::AccessPointers* accessPointers);
+    virtual std::string ToString(NetBase::AccessPointers* accessPointers);
 
-    csString password;
+    std::string password;
 };
 
 //-----------------------------------------------------------------------------
@@ -4976,20 +4984,20 @@ public:
      * @param accessPointers A struct to a number of access pointers.
      * @return Return a human readable string for the message.
      */
-    virtual csString ToString(NetBase::AccessPointers* accessPointers);
+    virtual std::string ToString(NetBase::AccessPointers* accessPointers);
 
     bool request;
 
     struct Item
     {
-        csString name;
-        csString mesh;
-        csString icon;
+        std::string name;
+        std::string mesh;
+        std::string icon;
     };
 
-    csArray<Item> items;
+    std::vector<Item> items;
 
-    csString type;
+    std::string type;
 };
 
 class psGMSpawnTypes : public psMessageCracker
@@ -5006,9 +5014,9 @@ public:
      * @param accessPointers A struct to a number of access pointers.
      * @return Return a human readable string for the message.
      */
-    virtual csString ToString(NetBase::AccessPointers* accessPointers);
+    virtual std::string ToString(NetBase::AccessPointers* accessPointers);
 
-    csArray<csString> types;
+    std::vector<std::string> types;
 };
 
 /*
@@ -5028,9 +5036,9 @@ public:
      * @param accessPointers A struct to a number of access pointers.
      * @return Return a human readable string for the message.
      */
-    virtual csString ToString(NetBase::AccessPointers* accessPointers);
+    virtual std::string ToString(NetBase::AccessPointers* accessPointers);
 
-    csString item;
+    std::string item;
 };
 
 /*
@@ -5048,12 +5056,12 @@ public:
 
     struct ItemModifier
     {
-        csString name;
+        std::string name;
         uint32_t id;
         uint32_t type;
     };
 
-    psGMSpawnMods(uint32_t client, csArray<ItemModifier>& imods);
+    psGMSpawnMods(uint32_t client, std::vector<ItemModifier>& imods);
     psGMSpawnMods(MsgEntry* me);
 
     PSF_DECLARE_MSG_FACTORY();
@@ -5064,9 +5072,9 @@ public:
      * @param accessPointers A struct to a number of access pointers.
      * @return Return a human readable string for the message.
      */
-    virtual csString ToString(NetBase::AccessPointers* accessPointers);
+    virtual std::string ToString(NetBase::AccessPointers* accessPointers);
 
-    csArray<ItemModifier> mods;
+    std::vector<ItemModifier> mods;
 };
 
 class psGMSpawnItem : public psMessageCracker
@@ -5088,7 +5096,7 @@ public:
         bool pickupableWeak,
         bool random = false,
         float quality = 0.0f,
-        csArray<uint32_t>* mods = 0
+        std::vector<uint32_t>* mods = 0
         );
 
     psGMSpawnItem(MsgEntry* me);
@@ -5101,17 +5109,17 @@ public:
      * @param accessPointers A struct to a number of access pointers.
      * @return Return a human readable string for the message.
      */
-    virtual csString ToString(NetBase::AccessPointers* accessPointers);
+    virtual std::string ToString(NetBase::AccessPointers* accessPointers);
 
-    csString item;
+    std::string item;
     unsigned int count;
     bool lockable,locked,pickupable,collidable,Unpickable,SettingItem,NPCOwned,Transient, pickupableWeak;
 
-    csString lskill;
+    std::string lskill;
     int lstr;
     bool random;
     float quality;
-    csArray<uint32_t> mods;
+    std::vector<uint32_t> mods;
 };
 
 class psLootRemoveMessage : public psMessageCracker
@@ -5128,7 +5136,7 @@ public:
      * @param accessPointers A struct to a number of access pointers.
      * @return Return a human readable string for the message.
      */
-    virtual csString ToString(NetBase::AccessPointers* accessPointers);
+    virtual std::string ToString(NetBase::AccessPointers* accessPointers);
 
     int id;
 };
@@ -5136,7 +5144,7 @@ public:
 class psCharCreateTraitsMessage : public psMessageCracker
 {
 public:
-    psCharCreateTraitsMessage(uint32_t client, csString &string)
+    psCharCreateTraitsMessage(uint32_t client, std::string &string)
     {
         msg.AttachNew(new MsgEntry(string.Length()+1));
 
@@ -5145,7 +5153,7 @@ public:
         msg->Add(string);
     }
 
-    psCharCreateTraitsMessage(csString &string)
+    psCharCreateTraitsMessage(std::string &string)
     {
         msg.AttachNew(new MsgEntry(string.Length()+1));
 
@@ -5169,15 +5177,15 @@ public:
      * @param accessPointers A struct to a number of access pointers.
      * @return Return a human readable string for the message.
      */
-    virtual csString ToString(NetBase::AccessPointers* accessPointers);
+    virtual std::string ToString(NetBase::AccessPointers* accessPointers);
 
-    const csString &GetString() const
+    const std::string &GetString() const
     {
         return string;
     }
 
 private:
-    csString string;
+    std::string string;
 };
 
 class psClientStatusMessage : public psMessageCracker
@@ -5194,7 +5202,7 @@ public:
      * @param accessPointers A struct to a number of access pointers.
      * @return Return a human readable string for the message.
      */
-    virtual csString ToString(NetBase::AccessPointers* accessPointers);
+    virtual std::string ToString(NetBase::AccessPointers* accessPointers);
 
     bool ready;
 
@@ -5227,7 +5235,7 @@ public:
      * @param accessPointers A struct to a number of access pointers.
      * @return Return a human readable string for the message.
      */
-    virtual csString ToString(NetBase::AccessPointers* accessPointers);
+    virtual std::string ToString(NetBase::AccessPointers* accessPointers);
 
     ModType type;
     csVector3 movementMod;
@@ -5248,7 +5256,7 @@ public:
      * @param accessPointers A struct to a number of access pointers.
      * @return Return a human readable string for the message.
      */
-    virtual csString ToString(NetBase::AccessPointers* accessPointers);
+    virtual std::string ToString(NetBase::AccessPointers* accessPointers);
 };
 
 class psMovementInfoMessage : public psMessageCracker
@@ -5271,7 +5279,7 @@ public:
      * @param accessPointers A struct to a number of access pointers.
      * @return Return a human readable string for the message.
      */
-    virtual csString ToString(NetBase::AccessPointers* accessPointers);
+    virtual std::string ToString(NetBase::AccessPointers* accessPointers);
 
     // Count of each object
     size_t modes, moves;
@@ -5293,7 +5301,7 @@ public:
         msg->SetType(MSGTYPE_CRAFT_INFO);
     }
 
-    psMsgCraftingInfo(uint32_t client, csString craftinfo)
+    psMsgCraftingInfo(uint32_t client, std::string craftinfo)
     {
         msg.AttachNew(new MsgEntry(craftinfo.Length()+1));
 
@@ -5317,9 +5325,9 @@ public:
      * @param accessPointers A struct to a number of access pointers.
      * @return Return a human readable string for the message.
      */
-    virtual csString ToString(NetBase::AccessPointers* accessPointers);
+    virtual std::string ToString(NetBase::AccessPointers* accessPointers);
 
-    csString craftInfo;
+    std::string craftInfo;
 };
 
 //-----------------------------------------------------------------------------
@@ -5330,7 +5338,7 @@ public:
 class psTraitChangeMessage : public psMessageCracker
 {
 public:
-    psTraitChangeMessage(uint32_t client, EID targetID, csString &string)
+    psTraitChangeMessage(uint32_t client, EID targetID, std::string &string)
     {
         msg.AttachNew(new MsgEntry(string.Length()+1 + sizeof(uint32_t)));
 
@@ -5356,10 +5364,10 @@ public:
      * @param accessPointers A struct to a number of access pointers.
      * @return Return a human readable string for the message.
      */
-    virtual csString ToString(NetBase::AccessPointers* accessPointers);
+    virtual std::string ToString(NetBase::AccessPointers* accessPointers);
 
     EID target;
-    csString string;
+    std::string string;
 };
 
 //-----------------------------------------------------------------------------
@@ -5394,10 +5402,10 @@ public:
      * @param accessPointers A struct to a number of access pointers.
      * @return Return a human readable string for the message.
      */
-    virtual csString ToString(NetBase::AccessPointers* accessPointers);
+    virtual std::string ToString(NetBase::AccessPointers* accessPointers);
 
     int whichMessage;
-    csString instrs;
+    std::string instrs;
 };
 
 /**
@@ -5440,19 +5448,19 @@ public:
      * @param accessPointers A struct to a number of access pointers.
      * @return Return a human readable string for the message.
      */
-    virtual csString ToString(NetBase::AccessPointers* accessPointers)
+    virtual std::string ToString(NetBase::AccessPointers* accessPointers)
     {
         (void)accessPointers; // NOT USED
-        return csString("not implemented");
+        return std::string("not implemented");
     }
 
     uint32_t ItemID;
     uint8_t  Flags;
-    csString Sketch;
-    csString limits;
+    std::string Sketch;
+    std::string limits;
     bool rightToEdit;
-    csString name;
-    csString backgroundImg;
+    std::string name;
+    std::string backgroundImg;
 };
 
 /**
@@ -5482,16 +5490,16 @@ public:
     //----------------------
     PSF_DECLARE_MSG_FACTORY();
 
-    virtual csString ToString(NetBase::AccessPointers* /*accessPointers*/)
+    virtual std::string ToString(NetBase::AccessPointers* /*accessPointers*/)
     {
-        return csString("not implemented");
+        return std::string("not implemented");
     }
 
     uint32_t itemID;
     bool readOnly;
     bool play;
-    csString songTitle;
-    csString musicalSheet;
+    std::string songTitle;
+    std::string musicalSheet;
 };
 
 /**
@@ -5523,15 +5531,15 @@ public:
     //----------------------
     PSF_DECLARE_MSG_FACTORY();
 
-    virtual csString ToString(NetBase::AccessPointers* /*accessPointers*/)
+    virtual std::string ToString(NetBase::AccessPointers* /*accessPointers*/)
     {
-        return csString("not implemented");
+        return std::string("not implemented");
     }
 
     uint32_t songID;
     bool toPlayer;
-    csString instrName;
-    csString musicalScore;
+    std::string instrName;
+    std::string musicalScore;
 };
 
 
@@ -5575,9 +5583,9 @@ public:
     //----------------------
     PSF_DECLARE_MSG_FACTORY();
 
-    virtual csString ToString(NetBase::AccessPointers* /*accessPointers*/)
+    virtual std::string ToString(NetBase::AccessPointers* /*accessPointers*/)
     {
-        return csString("not implemented");
+        return std::string("not implemented");
     }
 
     uint32_t songID;
@@ -5604,7 +5612,7 @@ public:
      * @param accessPointers A struct to a number of access pointers
      * @return A human readable string for the message
      */
-    virtual csString ToString(NetBase::AccessPointers* accessPointers);
+    virtual std::string ToString(NetBase::AccessPointers* accessPointers);
 
     /// Indicates that this is a request to start the game
     bool msgStart;
@@ -5631,7 +5639,7 @@ public:
      * @param accessPointers A struct to a number of access pointers
      * @return A human readable string for the message
      */
-    virtual csString ToString(NetBase::AccessPointers* accessPointers);
+    virtual std::string ToString(NetBase::AccessPointers* accessPointers);
 
     /// Returns true if this message recent compared to the passed sequence value
     bool IsNewerThan(uint8_t oldCounter);
@@ -5689,7 +5697,7 @@ public:
      * @param accessPointers A struct to a number of access pointers
      * @return A human readable string for the message
      */
-    virtual csString ToString(NetBase::AccessPointers* accessPointers);
+    virtual std::string ToString(NetBase::AccessPointers* accessPointers);
 
     /// Returns true if this message is newer than the passed sequence value
     bool IsNewerThan(uint8_t oldCounter);
@@ -5736,7 +5744,7 @@ public:
      * @param accessPointers A struct to a number of access pointers
      * @return A human readable string for the message
      */
-    virtual csString ToString(NetBase::AccessPointers* accessPointers);
+    virtual std::string ToString(NetBase::AccessPointers* accessPointers);
 
     /// The gem entity ID of the entrance object
     EID entranceID;
@@ -5760,7 +5768,7 @@ public:
 
     PSF_DECLARE_MSG_FACTORY();
 
-    void Populate(csString &gmeventStr, int clientnum);
+    void Populate(std::string &gmeventStr, int clientnum);
 
     /**
      *  Converts the message into human readable string.
@@ -5768,9 +5776,9 @@ public:
      * @param accessPointers A struct to a number of access pointers.
      * @return Return a human readable string for the message.
      */
-    virtual csString ToString(NetBase::AccessPointers* accessPointers);
+    virtual std::string ToString(NetBase::AccessPointers* accessPointers);
 
-    csString gmEventsXML;
+    std::string gmEventsXML;
 };
 
 //---------------------------------------------------------------------------
@@ -5797,11 +5805,11 @@ public:
      * @param accessPointers A struct to a number of access pointers.
      * @return Return a human readable string for the message.
      */
-    virtual csString ToString(NetBase::AccessPointers* accessPointers);
+    virtual std::string ToString(NetBase::AccessPointers* accessPointers);
 
     int command,id;
     bool Evaluatable; ///< Stores if an event can be evaluated
-    csString xml;     ///< Stores an xml string (various uses)
+    std::string xml;     ///< Stores an xml string (various uses)
 };
 
 
@@ -5815,7 +5823,7 @@ public:
     // Structure to hold faction name/faction value pairs.
     struct FactionPair
     {
-        csString faction;       // Name of the faction.
+        std::string faction;       // Name of the faction.
         int      rating;        // Rating with that faction.
     };
 
@@ -5836,7 +5844,7 @@ public:
      *  @param factionName The name of the faction.
      *  @param rating The rating with that faction.
      */
-    void AddFaction(csString factionName, int rating);
+    void AddFaction(std::string factionName, int rating);
 
     /// Build the messasge to prepare for it to be sent.
     void BuildMsg();
@@ -5845,7 +5853,7 @@ public:
     psFactionMessage(MsgEntry* message);
 
     PSF_DECLARE_MSG_FACTORY();
-    virtual csString ToString(NetBase::AccessPointers* accessPointers);
+    virtual std::string ToString(NetBase::AccessPointers* accessPointers);
 
     int cmd;                                /// The command type of message.
     int client;                             /// Destination client.
@@ -5875,9 +5883,9 @@ public:
      * @param accessPointers A struct to a number of access pointers.
      * @return Return a human readable string for the message.
      */
-    virtual csString ToString(NetBase::AccessPointers* accessPointers);
+    virtual std::string ToString(NetBase::AccessPointers* accessPointers);
 
-    csString name;
+    std::string name;
     int command,count;
 };
 
@@ -5892,9 +5900,9 @@ public:
 class psPlaySoundMessage : public psMessageCracker
 {
 public:
-    csString sound;
+    std::string sound;
     /** Create psMessageBytes struct for outbound use */
-    psPlaySoundMessage(uint32_t clientnum, csString snd);
+    psPlaySoundMessage(uint32_t clientnum, std::string snd);
 
     /** Crack incoming psMessageBytes struct for inbound use */
     psPlaySoundMessage(MsgEntry* message);
@@ -5906,7 +5914,7 @@ public:
      * @param accessPointers A struct to a number of access pointers.
      * @return Return a human readable string for the message.
      */
-    virtual csString ToString(NetBase::AccessPointers* accessPointers);
+    virtual std::string ToString(NetBase::AccessPointers* accessPointers);
 };
 
 //-----------------------------------------------------------------------------
@@ -5928,7 +5936,7 @@ public:
      * @param accessPointers A struct to a number of access pointers.
      * @return Return a human readable string for the message.
      */
-    virtual csString ToString(NetBase::AccessPointers* accessPointers);
+    virtual std::string ToString(NetBase::AccessPointers* accessPointers);
 
     int32_t raceID;
     int32_t CPValue;
@@ -5953,7 +5961,7 @@ public:
      * @param accessPointers A struct to a number of access pointers.
      * @return Return a human readable string for the message.
      */
-    virtual csString ToString(NetBase::AccessPointers* accessPointers);
+    virtual std::string ToString(NetBase::AccessPointers* accessPointers);
 };
 
 
@@ -5964,8 +5972,8 @@ class psCachedFileMessage : public psMessageCracker
 {
 
 public:
-    csString hash;
-    csRef<iDataBuffer> databuf;
+    std::string hash;
+    std::shared_ptr<iDataBuffer> databuf;
 
     psCachedFileMessage(uint32_t client, uint8_t sequence, const char* pathname, iDataBuffer* contents);
     psCachedFileMessage(MsgEntry* me);
@@ -5978,7 +5986,7 @@ public:
      * @param accessPointers A struct to a number of access pointers.
      * @return Return a human readable string for the message.
      */
-    virtual csString ToString(NetBase::AccessPointers* accessPointers);
+    virtual std::string ToString(NetBase::AccessPointers* accessPointers);
 
 };
 
@@ -5990,7 +5998,7 @@ public:
 class psDialogMenuMessage : public psMessageCracker
 {
 public:
-    csString xml;
+    std::string xml;
 
     psDialogMenuMessage();
     psDialogMenuMessage(MsgEntry* message);
@@ -6006,19 +6014,19 @@ public:
      * @param accessPointers A struct to a number of access pointers.
      * @return Return a human readable string for the message.
      */
-    virtual csString ToString(NetBase::AccessPointers* accessPointers);
+    virtual std::string ToString(NetBase::AccessPointers* accessPointers);
 
     struct DialogResponse
     {
         uint32_t id;
-        csString menuText;
-        csString triggerText;
+        std::string menuText;
+        std::string triggerText;
         uint32_t flags;
     };
 
-    void AddResponse(uint32_t id, const csString &menuText, const csString &triggerText, uint32_t flags = 0x00);
+    void AddResponse(uint32_t id, const std::string &menuText, const std::string &triggerText, uint32_t flags = 0x00);
 
-    csArray<DialogResponse> responses;
+    std::vector<DialogResponse> responses;
 };
 
 /**
@@ -6028,7 +6036,7 @@ class psSimpleStringMessage : public psMessageCracker
 {
 
 public:
-    csString str;
+    std::string str;
 
     psSimpleStringMessage(uint32_t client,MSG_TYPES type, const char* string);
     psSimpleStringMessage(MsgEntry* me);
@@ -6041,10 +6049,10 @@ public:
      * @param accessPointers A struct to a number of access pointers.
      * @return Return a human readable string for the message.
      */
-    virtual csString ToString(NetBase::AccessPointers* accessPointers)
+    virtual std::string ToString(NetBase::AccessPointers* accessPointers)
     {
         (void)accessPointers; // NOT USED
-        return csString("Str: ") + str;
+        return std::string("Str: ") + str;
     }
 
 };
@@ -6057,7 +6065,7 @@ class psSimpleRenderMeshMessage : public psMessageCracker
 
 public:
     iSector*           sector;
-    csString           name;  /// Name of this collection of meshes
+    std::string           name;  /// Name of this collection of meshes
     uint16_t            index; /// The index in the collection
     uint16_t            count; /// The total number of meshes in this collection
     csSimpleRenderMesh simpleRenderMesh;
@@ -6073,7 +6081,7 @@ public:
      * @param accessPointers A struct to a number of access pointers.
      * @return Return a human readable string for the message.
      */
-    virtual csString ToString(NetBase::AccessPointers* accessPointers);
+    virtual std::string ToString(NetBase::AccessPointers* accessPointers);
 };
 
 /**
@@ -6101,14 +6109,14 @@ public:
     // From psMessageCracker
     PSF_DECLARE_MSG_FACTORY();
 
-    virtual csString ToString(NetBase::AccessPointers* /*accessPointers*/)
+    virtual std::string ToString(NetBase::AccessPointers* /*accessPointers*/)
     {
-        return csString("not implemented");
+        return std::string("not implemented");
     }
 
-    csString meshName;
-    csString move;
-    csString rot;
+    std::string meshName;
+    std::string move;
+    std::string rot;
 };
 
 
@@ -6132,7 +6140,7 @@ public:
     * @param accessPointers A struct to a number of access pointers.
     * @return Return a human readable string for the message.
     */
-    virtual csString ToString(NetBase::AccessPointers* accessPointers);
+    virtual std::string ToString(NetBase::AccessPointers* accessPointers);
 
 };
 
@@ -6162,12 +6170,12 @@ public:
     uint8_t  command;
     EID      hiredEID;
     bool     choice;
-    csString workLocation;
+    std::string workLocation;
     bool     workLocationValid;
-    csString script;
-    csString locationType;
-    csString locationName;
-    csString errorMessage;
+    std::string script;
+    std::string locationType;
+    std::string locationName;
+    std::string errorMessage;
 
     /** Constructor.
      *  For commands CANCEL, WORK_LOCATION, REQUEST and COMMIT.
@@ -6213,7 +6221,7 @@ public:
     * @param accessPointers A struct to a number of access pointers.
     * @return Return a human readable string for the message.
     */
-    virtual csString ToString(NetBase::AccessPointers* accessPointers);
+    virtual std::string ToString(NetBase::AccessPointers* accessPointers);
 
 };
 

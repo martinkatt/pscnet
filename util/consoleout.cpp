@@ -18,50 +18,7 @@
 * Author: Matthias Braun <MatzeBraun@gmx.de>
 */
 
-#include <psconfig.h>
-
-#include <csutil/snprintf.h>
-#include <csutil/sysfunc.h>
-#include <csutil/threading/thread.h>
-
-#include <stdio.h>
-#include <string.h>
-#include <stdarg.h>
-#include <memory.h>
-
-#ifdef CS_COMPILER_MSVC
-#include <conio.h>
-#endif
-
-#ifdef HAVE_READLINE_READLINE_H
-#   include <readline/readline.h>
-#   ifdef HAVE_READLINE_HISTORY_H
-#    include <readline/history.h>
-#    define USE_HISTORY
-#   endif
-#   define USE_READLINE
-#endif
-
-#ifdef HAVE_READLINE_H
-/* g++ with glibc hack... */
-#   ifdef __P
-#    undef __P
-#   endif
-#   include <readline.h>
-#   ifdef HAVE_HISTORY_H
-#    include <history.h>
-#    define USE_HISTORY
-#   endif
-#   define USE_READLINE
-#endif
-
-#ifndef whitespace
-#   define whitespace(c) (((c) == ' ') || ((c) == '\t') || ((c) == '\r') )
-#endif
-
 #include "consoleout.h"
-#include "command.h"
-#include "util/pserror.h"
 
 FILE* errorLog = NULL;
 static FILE* outputfile = NULL;
@@ -69,7 +26,7 @@ static ConsoleOutMsgClass maxoutput_stdout = CON_SPAM;
 static ConsoleOutMsgClass maxoutput_file = CON_SPAM;
 
 int ConsoleOut::shift = 0;
-csString *ConsoleOut::strBuffer = NULL;
+std::string *ConsoleOut::strBuffer = NULL;
 bool ConsoleOut::atStartOfLine = true;
 bool ConsoleOut::promptDisplayed = false;
 
@@ -124,38 +81,46 @@ void ConsoleOut::Intern_Printf (ConsoleOutMsgClass con, const char* string, ...)
 
 void ConsoleOut::Intern_VPrintf (ConsoleOutMsgClass con, const char* string, va_list args)
 {
-    csString output;
-    csString time_buffer; //holds the time string to be appended to each line
+    std::string output;
+    std::stringstream time_buffer; //holds the time string to be appended to each line
     bool ending_newline = false;
-    output.FormatV(string, args); //formats the output
+    //output.FormatV(string, args); //formats the output
 	
 	//get time stamp
     time_t curtime = time(NULL);
     struct tm *loctime;
     loctime = localtime (&curtime);
-    time_buffer.Format("%s", asctime(loctime)); //formats the time string to be appended
-    time_buffer.Truncate(time_buffer.Length()-1);
-    time_buffer.Append(", ");
+    time_buffer << asctime(loctime); //formats the time string to be appended
+    time_buffer.str(time_buffer.str().erase(time_buffer.str().size() - 1));
+    time_buffer << ", ";
     // Append any shift
     for (int i=0; i < shift; i++)
     {
-        time_buffer.Append("  ");
+        time_buffer << "  ";
     }
-    output.Insert(0, time_buffer); //add it to the starting of the string
+    output.insert(0, time_buffer.str()); //add it to the starting of the string
 
     // Format output with timestamp at each line and apply shifts
     
-    if(output.GetAt(output.Length()-1) == '\n')  //check if there is an ending new line to avoid substitution there
+    if(output.at(output.size() - 1) == '\n')  //check if there is an ending new line to avoid substitution there
     {
-        output.Truncate(output.Length()-1);
+        output.erase(output.size() - 1);
         ending_newline = true;
     }
 
-    time_buffer.Insert(0, "\n"); //add the leading new line in the time string
-    output.FindReplace("\n", time_buffer); //adds the string to be appended to the output string
+    time_buffer.str(time_buffer.str().insert(0, "\n")); 
+    //add the leading new line in the time string
+    size_t start_pos;
+    std::string replace = "\n";
+
+    while((start_pos = output.find(replace, start_pos)) != std::string::npos) {
+        output.replace(start_pos, replace.length(), time_buffer.str());
+        start_pos += time_buffer.str().length(); // ...
+    }
+    //adds the string to be appended to the output string
     
     if(ending_newline) //restore the ending newline if it was removed
-        output.Append("\n");
+        output.append("\n");
 
     // Now that we have output correctly formated check where to send the output
 
@@ -164,7 +129,7 @@ void ConsoleOut::Intern_VPrintf (ConsoleOutMsgClass con, const char* string, va_
     {
         if (strBuffer)
         {
-            strBuffer->Append(output);
+            strBuffer->append(output);
         }
         else
         {
@@ -173,7 +138,7 @@ void ConsoleOut::Intern_VPrintf (ConsoleOutMsgClass con, const char* string, va_
                 printf("\n");
                 promptDisplayed = false;
             }
-            printf("%s", output.GetDataSafe());
+            printf("%s", output.c_str());
             fflush(stdout);
         }
     }
@@ -182,7 +147,7 @@ void ConsoleOut::Intern_VPrintf (ConsoleOutMsgClass con, const char* string, va_
     // Check for output file
     if (outputfile && con <= maxoutput_file)
     {
-        fprintf(outputfile, "%s", output.GetDataSafe());
+        fprintf(outputfile, "%s", output.c_str());
     }
     // Check for error log
     if (con == CON_ERROR ||
@@ -195,7 +160,7 @@ void ConsoleOut::Intern_VPrintf (ConsoleOutMsgClass con, const char* string, va_
 
         if(errorLog)
         {
-            fprintf(errorLog, "%s", output.GetDataSafe());
+            fprintf(errorLog, "%s", output.c_str());
             fflush(errorLog);
         }
     }
@@ -243,8 +208,8 @@ void ConsoleOut::SetPrompt(const char *format, ...)
 {
     va_list args;
     va_start(args, format);
-    csString buffer;
-    buffer.FormatV(format, args);
+    std::string buffer;
+    //buffer.FormatV(format, args);
     va_end(args);
 
     if (!atStartOfLine)
@@ -253,7 +218,10 @@ void ConsoleOut::SetPrompt(const char *format, ...)
         atStartOfLine = true;
     }
 
-    printf("%8u) %s",csGetTicks(),buffer.GetDataSafe());
+    auto msecs = std::chrono::duration_cast<std::chrono::milliseconds>(
+        std::chrono::system_clock::now().time_since_epoch());
+
+    printf("%8u) %s", msecs, buffer.c_str());
     promptDisplayed = true;
 }
 

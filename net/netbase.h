@@ -29,6 +29,15 @@
 #include "net/netpacket.h"
 #include "util/genrefqueue.h"
 #include "net/netprofile.h"
+#include "util/pserror.h"
+#include "net/netpacket.h"
+#include "net/message.h"
+#include "net/messages.h"
+#include "util/psscf.h"
+#include "util/psconst.h"
+#include "util/log.h"
+#include "util/serverconsole.h"
+#include "util/strutil.h"
 
 #include <algorithm>
 #include <string>
@@ -43,6 +52,13 @@
 #include <queue>
 #include <sstream>
 #include <set>
+
+#include <stdlib.h>
+#include <stdio.h>
+
+#include <ctype.h> 
+
+#include <fcntl.h>
 
 /**
  * \addtogroup common_net

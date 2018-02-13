@@ -23,8 +23,6 @@
 #ifndef CSSETUP_HEADER
 #define CSSETUP_HEADER
 
-#include <cstool/initapp.h>
-
 struct iConfigManager;
 struct iConfigFile;
 struct iVFS;

@@ -18,14 +18,8 @@
  * A slightly improved string over csString.  Adds a couple of functions
  * that will be needed by the XML parser.
  */
-#include <psconfig.h>
-
-#include <string.h>
-#include <ctype.h>
 
 #include "util/psstring.h"
-#include "util/strutil.h"
-#include "util/psconst.h"
 
 bool psString::FindString(const char *border, unsigned int & pos, unsigned int & end) const
 {
@@ -33,7 +27,7 @@ bool psString::FindString(const char *border, unsigned int & pos, unsigned int &
     if (pos == (unsigned int)-1)
         return false;
 
-    end = pos + (int)strlen(border);
+    end = pos + (int)std::strlen(border);
     end = FindSubString(border, end);
     if (end == (unsigned int)-1)
         return false;
@@ -43,15 +37,17 @@ bool psString::FindString(const char *border, unsigned int & pos, unsigned int &
 
 bool psString::FindNumber(unsigned int & pos, unsigned int & end) const
 {
-    const char *myData = this->GetData();
+    const char *myData = this->c_str();
 
-    while (pos < Length()  &&  !(isdigit(myData[pos]) || myData[pos] == '-' || myData[pos] == '.'))
+    while (pos < this->size() && !(isdigit(myData[pos]) ||
+        myData[pos] == '-' || myData[pos] == '.'))
         pos++;
 
-    if (pos < Length())
+    if (pos < this->size())
     {
         end = pos;
-        while (end< Length()  &&  (isdigit(myData[end]) || myData[end] == '-' || myData[end] == '.'))
+        while (end< this->size  &&  (isdigit(myData[end]) || 
+            myData[end] == '-' || myData[end] == '.'))
             end++;
 
         end--;
@@ -63,15 +59,15 @@ bool psString::FindNumber(unsigned int & pos, unsigned int & end) const
 
 int psString::FindSubString(const char *sub, size_t start, bool caseInsense, bool wholeWord) const
 {
-    const char *myData = this->GetData();
+    const char *myData = this->c_str();
 
     size_t lensub = strlen(sub);
-    if ( IsEmpty() || !lensub || lensub>Length() )
+    if ( this->size() == 0 || !lensub || lensub > this->size() )
         return -1;
 
     if ( caseInsense )
     {
-        while ( start <= Length() - lensub )
+        while ( start <= this->size() - lensub )
         {
             if (strncasecmp(sub, myData + start, lensub) != 0)
                 start++;
@@ -119,23 +115,23 @@ int psString::FindSubString(const char *sub, size_t start, bool caseInsense, boo
 
 int psString::FindSubStringReverse(psString& sub, size_t start, bool caseInsense)
 {
-    const char *myData = this->GetData();
+    const char *myData = this->c_str();
 
-    if ( IsEmpty() || sub.IsEmpty() || sub.Length()>Length() )
+    if (this->size() == 0 || sub.size() == 0 || sub.size()>this->size())
         return -1;
 
-    if ( caseInsense )
+    if (caseInsense)
     {
-        while ( start >= 0 + sub.Length() )
+        while ( start >= 0 + sub.size() )
         {
-            const char* pWhere = myData + start - sub.Length();
+            const char* pWhere = myData + start - sub.size();
             size_t x;
-            for ( x = 0; x < sub.Length(); x++ )
+            for ( x = 0; x < sub.size(); x++ )
             {
                 if ( toupper(pWhere[x]) != toupper(sub[x]) )
                     break;
             }
-            if ( x < sub.Length() )
+            if ( x < sub.size() )
                 start--;
             else
                 return pWhere-myData;
@@ -144,17 +140,17 @@ int psString::FindSubStringReverse(psString& sub, size_t start, bool caseInsense
     }
     else
     {
-        while ( start >= 0 + sub.Length() )
+        while ( start >= 0 + sub.size() )
         {
-            const char* pWhere = myData + start - sub.Length();
+            const char* pWhere = myData + start - sub.size();
             size_t x;
             x=0;
-            for ( x = 0; x < sub.Length(); x++ )
+            for ( x = 0; x < sub.size(); x++ )
             {
                 if ( pWhere[x] != sub[x] )
                     break;
             }
-            if ( x < sub.Length() )
+            if ( x < sub.size() )
                 start--;
             else
                 return pWhere-myData;
@@ -165,13 +161,13 @@ int psString::FindSubStringReverse(psString& sub, size_t start, bool caseInsense
 
 void psString::GetSubString(psString& str, size_t from, size_t to) const
 {
-    str.Clear();
+    str.clear();
 
-    if ( from > Size || from > to )
+    if ( from > this->size() || from > to )
         return;
 
-    size_t len = to-from;
-    str.Append ( ((const char*) *this) + from, len);
+    size_t len = to - from;
+    str += ( ((const char*) this) + from, len);
 }
 
 void psString::GetWord(size_t pos, psString &buff, bool wantPunct) const
@@ -179,13 +175,13 @@ void psString::GetWord(size_t pos, psString &buff, bool wantPunct) const
     size_t start = pos;
     size_t end   = pos;
 
-    if (pos > Size)
+    if (pos > this->size())
     {
         buff="";
         return;
     }
 
-    const char *myData = this->GetData();
+    const char *myData = this->c_str();
 
     // go back to the beginning of the word
     while (start > 0 && (!isspace(myData[start])) &&
@@ -196,7 +192,7 @@ void psString::GetWord(size_t pos, psString &buff, bool wantPunct) const
         start++;
 
     // search end of the word
-    while (end<Size && (!isspace(myData[end])) &&
+    while (end < this->size() && (!isspace(myData[end])) &&
            (wantPunct || !ispunct(myData[end])) 
           )
     end++;
@@ -204,23 +200,23 @@ void psString::GetWord(size_t pos, psString &buff, bool wantPunct) const
     GetSubString(buff,start,end);
 }
 
-void psString::GetWordNumber(int which,psString& buff) const
+void psString::GetWordNumber(int which, psString& buff) const
 {
-    buff = ::GetWordNumber((csString) *this, which);
+    buff = ::GetWordNumber((std::string) *this, which);
 }
     
-void psString::GetLine(size_t start,csString& line) const
+void psString::GetLine(size_t start, std::string& line) const
 {
-    size_t end  = this->FindFirst('\n',start);
-    size_t end2 = this->FindFirst('\r',start);
+    size_t end  = this->find_first_of('\n',start);
+    size_t end2 = this->find_first_of('\r',start);
     if (end == SIZET_NOT_FOUND)
-        end = Length();
+        end = this->size();
     if (end2 == SIZET_NOT_FOUND)
-        end2 = Length();
+        end2 = this->size();
     if (end2 < end)
         end = end2;
 
-    SubString(line,start,end-start);
+    line.substr(start, end - start);
 }
 
 bool psString::ReplaceSubString(const char* what, const char* with)
@@ -231,8 +227,8 @@ bool psString::ReplaceSubString(const char* what, const char* with)
     {
         size_t where = (size_t)at;
         size_t pos = where;
-        DeleteAt(where, len);
-        Insert(pos, with);
+        this->erase(where, len);
+        this->insert(pos, with);
         return true;
     }
     else
@@ -241,14 +237,14 @@ bool psString::ReplaceSubString(const char* what, const char* with)
 
 size_t psString::FindCommonLength(const psString& other) const
 {
-    const char *myData = this->GetData();
-    const char *otherData = other.GetData();
+    const char *myData = this->c_str();
+    const char *otherData = other.c_str();
 
     if (!myData || !otherData)
         return 0;
 
     size_t i;
-    for (i=0; i<Length(); i++)
+    for (i=0; i<this->size(); i++)
     {
         if (myData[i] != otherData[i])
             return i;
@@ -260,7 +256,7 @@ size_t psString::FindCommonLength(const psString& other) const
 
 bool psString::IsVowel(size_t pos)
 {
-    switch ( GetAt(pos) )
+    switch (this->at(pos))
     {
         case 'a': case 'A':
         case 'e': case 'E':
@@ -276,15 +272,20 @@ bool psString::IsVowel(size_t pos)
 
 psString& psString::Plural()
 {
+    std::string subpsstring = this->substr(this->size() - 4);
+    std::transform(subpsstring.begin(), subpsstring.end(), subpsstring.begin(), ::tolower);
+
     // Check exceptions first
-    if ( Slice(Size-4).Downcase() == "fish" )
+    if (subpsstring == "fish")
     {
         return *this;
     }
 
     const char *suffix = "s";
 
-    switch ( GetAt(Size-1) ) // Last char
+    char token = this->at(this->size() - 1);
+
+    switch (token) // Last char
     {
         case 's': case 'S':
         case 'x': case 'X':
@@ -293,7 +294,7 @@ psString& psString::Plural()
             break;
 
         case 'h': case 'H':
-            switch ( GetAt(Size-2) ) // Second to last char
+            switch (this->at(this->size() - 2)) // Second to last char
             {
                 case 'c': case 'C':
                 case 's': case 'S':
@@ -303,43 +304,53 @@ psString& psString::Plural()
             break;
 
         case 'o': case 'O':
-            if ( !IsVowel(Size-2) ) // Second to last char is consonant
+            if (!IsVowel(this->size() - 2)) // Second to last char is consonant
                 suffix = "es";
             break;
 
         case 'y': case 'Y':
-            if ( !IsVowel(Size-2) ) // Second to last char is consonant
+            if (!IsVowel(this->size() - 2)) // Second to last char is consonant
             {
-                Truncate(Size-1);
+                this->erase(this->size() - 1);
                 suffix = "ies";
             }
             break;
-
     }
 
-    Append(suffix);
+    this->append(suffix);
 
     return *this;
 }
 
-void psString::Split(csStringArray& arr, char delim)
+void psString::Split(std::vector<std::string>& arr, char delim)
 {
-    Trim();
-    if (!Length())
+    //Trim
+    this->erase(this->begin(), std::find_if(this->begin(), this->end(), [](int ch) {
+        return !std::isspace(ch);
+    }));
+
+    if (!this->size())
         return;
 
-    size_t pipePos = FindFirst(delim);
+    size_t pipePos = this->find_first_of(delim);
     if (pipePos == size_t(-1))
-        arr.Push(GetDataSafe());
+        arr.push_back((std::string) this->c_str());
     else
     {
         psString first, rest;
-        SubString(first, 0, pipePos);
-        first.Trim();
-        if (first.Length())
+        first = this->substr(0, pipePos);
+
+        //Trim
+        first.erase(first.begin(), std::find_if(first.begin(), first.end(), [](int ch) {
+            return !std::isspace(ch);
+        }));
+
+        if (first.size())
         {
-            arr.Push(first);
-            SubString(rest, pipePos+1, Length()-pipePos-1);
+            arr.push_back(first);
+
+            rest = this->substr(pipePos+1, this->size()-pipePos-1);
+            
             rest.Split(arr,delim);
         }
     }

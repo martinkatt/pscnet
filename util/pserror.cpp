@@ -1,11 +1,4 @@
-#include <psconfig.h>
-
-#include <stdarg.h>
 #include "util/pserror.h"
-
-#ifdef CS_COMPILER_MSVC
-#include <conio.h>
-#endif
 
 void psprintf(const char *arg, ...)
 {
@@ -37,7 +30,7 @@ void errorhalt(const char* function, const char* file, int line,
 #endif
     // yes, we're crude here, but with this we can trace back with the
     // debugger
-    CS_ASSERT(false);
+    //CS_ASSERT(false);
 }
 
 void errormsg(const char* function, const char* file, int line,

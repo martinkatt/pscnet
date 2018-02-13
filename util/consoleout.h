@@ -20,6 +20,45 @@
 #define __CONSOLEOUT_H__
 
 #include <stdarg.h>
+#include <string>
+#include <sstream>
+#include <algorithm>
+#include <chrono>
+#include <stdio.h>
+#include <memory.h>
+
+#ifdef CS_COMPILER_MSVC
+#include <conio.h>
+#endif
+
+#ifdef HAVE_READLINE_READLINE_H
+#   include <readline/readline.h>
+#   ifdef HAVE_READLINE_HISTORY_H
+#    include <readline/history.h>
+#    define USE_HISTORY
+#   endif
+#   define USE_READLINE
+#endif
+
+#ifdef HAVE_READLINE_H
+/* g++ with glibc hack... */
+#   ifdef __P
+#    undef __P
+#   endif
+#   include <readline.h>
+#   ifdef HAVE_HISTORY_H
+#    include <history.h>
+#    define USE_HISTORY
+#   endif
+#   define USE_READLINE
+#endif
+
+#ifndef whitespace
+#   define whitespace(c) (((c) == ' ') || ((c) == '\t') || ((c) == '\r') )
+#endif
+
+#include "util/command.h"
+#include "util/pserror.h"
 
 /**
  * \addtogroup common_util
@@ -98,11 +137,11 @@ public:
      * then the console only prints to the string instead of to the
      * console, so the output can be captured and re-used.
      */
-    static void SetStringBuffer(csString *buffer)
+    static void SetStringBuffer(std::string *buffer)
     {
         strBuffer = buffer;
         if (buffer)
-            buffer->Clear();
+            buffer->clear();
     }
 
     /**
@@ -117,7 +156,7 @@ public:
     static void Unshift();
     
     static int shift;
-    static csString *strBuffer;
+    static std::string *strBuffer;
     static bool atStartOfLine;
     static bool promptDisplayed;
 };

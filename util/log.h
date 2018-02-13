@@ -21,6 +21,9 @@
 #define __PSUTIL_LOG_H__
 
 #include "util/singleton.h"
+#include "util/consoleout.h"
+// Using tuples here
+#include <utility>
 
 struct iConfigManager;
 struct iObjectRegistry;

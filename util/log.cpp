@@ -16,24 +16,15 @@
 * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 *
 */
-#include <psconfig.h>
 
-#include <csutil/csstring.h>
-#include <iutil/objreg.h>
-#include <ivaria/reporter.h>
-#include "util/consoleout.h"
 #include "util/log.h"
-#include <iutil/cfgmgr.h>
-
-// Using tuples here
-#include <utility>
 
 namespace pslog
 {
 
 iObjectRegistry* logger;
 bool disp_flag[MAX_FLAGS];
-uint32 filters_id[MAX_FLAGS];
+uint32_t filters_id[MAX_FLAGS];
 
 const char *flagnames[] = {
                         "LOG_ANY",

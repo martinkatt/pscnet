@@ -19,13 +19,12 @@
 #ifndef __MSGHANDLER_H__
 #define __MSGHANDLER_H__
 
-#include <csutil/parray.h>
-#include <csutil/refcount.h>
-#include <csutil/threading/thread.h>
-#include <csutil/threading/rwmutex.h>
-
 #include "net/message.h"
 #include "net/netbase.h"
+#include <map>
+#include <vector>
+#include <mutex>
+#include <memory>
 
 // forward decls
 struct iNetSubscriber;
@@ -80,7 +79,7 @@ struct Subscription
 struct OrderedMessageChannel
 {
     int nextSequenceNumber;
-    csRefArray<MsgEntry> pendingMessages;
+    std::vector<MsgEntry> pendingMessages;
 
     OrderedMessageChannel() : nextSequenceNumber(0) { }
 
@@ -122,7 +121,8 @@ public:
      * @param type The type of message to monitor
      * @param flags Additional flags to determine if the message should be forwarded
      */
-    virtual void Subscribe(iNetSubscriber *subscriber, msgtype type, uint32_t flags = 0x01/*REQUIRE_READY_CLIENT*/);
+    virtual void Subscribe(iNetSubscriber *subscriber, msgtype type, 
+        uint32_t flags = 0x01/*REQUIRE_READY_CLIENT*/);
 
     /** @brief Unsubscribes a subscriber from a specific message type
      *
@@ -154,7 +154,8 @@ public:
     { netbase->SendMessage(msg); }
 
     /// Send messages to many clients with one func call
-    virtual void Broadcast(MsgEntry* msg, broadcasttype scope = NetBase::BC_EVERYONEBUTSELF, int guildID=-1)
+    virtual void Broadcast(MsgEntry* msg, 
+        broadcasttype scope = NetBase::BC_EVERYONEBUTSELF, int guildID=-1)
     { netbase->Broadcast(msg, scope, guildID); }
 
     /**
@@ -173,7 +174,8 @@ public:
      * @param range  Is the maximum distance the client must be away to be out
      *     of "message reception range".
      */
-    virtual void Multicast(MsgEntry* msg, csArray<PublishDestination>& multi, uint32_t except, float range)
+    virtual void Multicast(MsgEntry* msg, 
+        std::vector<PublishDestination>& multi, uint32_t except, float range)
     { netbase->Multicast(msg, multi, except, range); }
 
     void AddToLocalQueue(MsgEntry *me) { netbase->QueueMessage(me); }
@@ -190,8 +192,8 @@ protected:
     /** 
      * @brief Stores the hash of all subscribers and the message type they are subscribed to
      */
-    csHash<Subscription, msgtype> subscribers;
-    CS::Threading::ReadWriteMutex mutex; /**< @brief Protects \ref subscribers */
+    std::map<Subscription, msgtype> subscribers;
+    std::mutex mutex; /**< @brief Protects \ref subscribers */
 };
 
 /** @} */

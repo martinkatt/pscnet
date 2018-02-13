@@ -22,6 +22,10 @@
 #include "util/consoleout.h"
 #include "util/gameevent.h"
 
+#include <string>
+#include <memory>
+#include <thread>
+
 #ifdef    USE_ANSI_ESCAPE
 #define COL_NORMAL  "\033[m\017"
 #define COL_RED        "\033[31m" 
@@ -41,7 +45,7 @@
 struct COMMAND;
 
 const COMMAND *find_command(const char *name);
-int execute_line(const char *line,csString *buffer);
+int execute_line(const char *line, std::string *buffer);
 
 struct iObjectRegistry;
 
@@ -63,7 +67,7 @@ public:
 /**
  * This class is implements the user input and output console for the server.
  */
-class ServerConsole : public ConsoleOut, public CS::Threading::Runnable
+class ServerConsole : public ConsoleOut
 {
 public:
     ServerConsole(iObjectRegistry *oreg, const char *appname, const char *prompt);
@@ -106,7 +110,7 @@ protected:
     const char *appname;
 
     /// The server console runs in its own thread.
-    csRef<CS::Threading::Thread> thread;
+    std::shared_ptr<std::thread> thread;
 
     /// If true, the server is shutting down, and the main loop should stop.
     bool stop;
@@ -120,17 +124,18 @@ protected:
 // Allows the console commands to be thread-safe by inserting them into the main event queue
 class psServerConsoleCommand : public psGameEvent
 {
-    csString command;
+    std::string command;
 
 public:
     // 0 offset for highest priority in the game event queue
-    psServerConsoleCommand(const char* command) : psGameEvent(0, 0, "psServerStatusRunEvent"), command(command) {};
+    psServerConsoleCommand(const char* command) : psGameEvent(0, 0, "psServerStatusRunEvent")
+        , command(command) {};
     void Trigger()
     {
         execute_line(command,NULL);
         CPrintf (CON_CMDOUTPUT, COL_BLUE "%s: " COL_NORMAL, ServerConsole::prompt);
     };
-    virtual csString ToString() const
+    virtual std::string ToString() const
     {
         return command;
     }

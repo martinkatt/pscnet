@@ -20,10 +20,9 @@
 #define PS_XML_PARSER_H
 
 #include "util/psstring.h"
-#include <csutil/xmltiny.h>
-#include <csutil/objreg.h>
-#include <iutil/vfs.h>
 #include "util/log.h"
+#include <string>
+#include <memory>
 
 /**
  * \addtogroup common_util
@@ -32,29 +31,30 @@
 /**
  * Loads and parses a XML file, then returns its parsed XML document.
  */
-csPtr<iDocument> ParseFile(iObjectRegistry* object_reg, const csString & name);
+std::shared_ptr<iDocument> ParseFile(iObjectRegistry* object_reg, const std::string & name);
 
 /**
  * Parses a XML string, then returns the parsed document.
  */
-csPtr<iDocument> ParseString(const csString & str, bool notify = true);
+std::shared_ptr<iDocument> ParseString(const std::string & str, bool notify = true);
 
 /**
  * Parses a XML string, then returns the top node with name 'topNodeName'.
  */
-csPtr<iDocumentNode> ParseStringGetNode(const csString & str, const csString & topNodeName, bool notify = true);
+std::shared_ptr<iDocumentNode> ParseStringGetNode(const std::string & str,
+    const std::string & topNodeName, bool notify = true);
 
 /**
  * Escapes special XML characters in 'str'.
  */
-csString EscpXML(const char * str);
+std::string EscpXML(const char * str);
 
 /**
  * Generates XML representing given node.
  *
  * If 'childrenOnly' is true, only XML of child nodes will be returned
  */
-csString GetNodeXML(iDocumentNode* node, bool childrenOnly = false);
+std::string GetNodeXML(iDocumentNode* node, bool childrenOnly = false);
 
 /**
  * Copies/merges children and attributes of 'source' to 'target'.
@@ -89,7 +89,7 @@ public:
     size_t GetWithinTagSection( int start, const char* tagName, psXMLString& tagSection);
 
     /**
-     * GetWithinTagSection return a csString containing the text in a tag section.
+     * GetWithinTagSection return a std::string containing the text in a tag section.
      *
      * <pre>\<TAG\>Text\</TAG\></pre>
      *
@@ -97,14 +97,14 @@ public:
      * @param tagName The name of the tag.
      * @param value Return the section text. If TAG not found the string isn't modified. 
      */
-    size_t GetWithinTagSection( int start, const char* tagName, csString& value);
+    size_t GetWithinTagSection( int start, const char* tagName, std::string& value);
     
     size_t GetWithinTagSection( int start, const char* tagName, int& value);
     size_t GetWithinTagSection( int start, const char* tagName, double& value);
 
     void operator=(const char* str)
     {
-        csString::operator=(str);
+        std::string::operator=(str);
     }
 protected:
     size_t FindMatchingEndTag(int iStart, const char *tagName);
@@ -125,7 +125,7 @@ public:
             str.GetTag( where, *this );
     }
 
-    void GetTagParm(const char* param, csString& value);
+    void GetTagParm(const char* param, std::string& value);
     void GetTagParm(const char* param, int& value);
     void GetTagParm(const char* param, double& value);
     void GetTagParm(const char* param, float& value);

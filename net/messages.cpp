@@ -20,12 +20,6 @@
 #include <memory.h>
 #include <string.h>
 #include <ctype.h>
-#include <csutil/databuf.h>
-#include <csutil/zip.h>
-#include <iengine/engine.h>
-#include <iengine/sector.h>
-#include <imesh/spritecal3d.h>
-#include <iutil/object.h>
 
 #include "util/psconst.h"
 #include "util/strutil.h"

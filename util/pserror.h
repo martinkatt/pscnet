@@ -6,6 +6,13 @@
 #ifndef __ERROR_H__
 #define __ERROR_H__
 
+#include <stdarg.h>
+#include <cstdio>
+
+#ifdef CS_COMPILER_MSVC
+#include <conio.h>
+#endif
+
 /**
  * \addtogroup common_util
  * @{ */

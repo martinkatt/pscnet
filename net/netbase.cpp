@@ -17,28 +17,7 @@
 *
 */
 
-#include <memory.h>
-#include <string.h>
-#include <stdlib.h>
-#include <stdio.h>
-
-#ifdef __APPLE__
-#include <sys/time.h>  // timeval struct in different place in Mac OS X
-#endif
-
-#include <ctype.h> 
-
-#include <fcntl.h>
-#include "util/pserror.h"
 #include "net/netbase.h"
-#include "net/netpacket.h"
-#include "net/message.h"
-#include "net/messages.h"
-#include "util/psscf.h"
-#include "util/psconst.h"
-#include "util/log.h"
-#include "util/serverconsole.h"
-#include "util/strutil.h"
 
 // Static members
 int NetBase::socklibrefcount=0;

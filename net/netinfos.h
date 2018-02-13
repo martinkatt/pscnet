@@ -27,8 +27,6 @@
 /// Number of entries in the ticks queue for calculating the average
 #define NETINFOS_TICKARRAYSIZE 10
 
-
-
 /// Gives informations about the network connection
 class psNetInfos
 {

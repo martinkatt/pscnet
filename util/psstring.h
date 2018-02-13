@@ -22,9 +22,14 @@
 #ifndef PS_STRING_H
 #define PS_STRING_H
 
-#include <csutil/csstring.h>
+#include <string>
+#include <vector>
+#include <cstring>
+#include <algorithm>
+#include <ctype.h>
+#include "util/strutil.h"
+#include "util/psconst.h"
 
-class csStringArray;
 class MathEnvironment;
 
 /**
@@ -34,16 +39,17 @@ class MathEnvironment;
 #define XML_CASE_INSENSITIVE true
 #define XML_CASE_SENSITIVE   false
 
-class psString : public csString
+class psString : public std::string
 {
 public:
     psString() {}
-    psString(const char* str) : csString(str) {}
-    psString(const csStringBase& str) : csString(str) {}
-    psString(const csString& str) : csString(str) {}
+    psString(const char* str) : std::string(str) {}
+    psString(const std::string& str) : std::string(str) {}
 
-    int FindSubString(const char *sub, size_t start=0, bool caseInsense=XML_CASE_SENSITIVE,bool wholeWord=false) const;
-    int FindSubStringReverse(psString& sub, size_t start, bool caseInsense=XML_CASE_SENSITIVE);
+    int FindSubString(const char *sub, size_t start=0, 
+        bool caseInsense=XML_CASE_SENSITIVE, bool wholeWord=false) const;
+    int FindSubStringReverse(psString& sub, size_t start,
+        bool caseInsense=XML_CASE_SENSITIVE);
     void GetSubString(psString& str, size_t from, size_t to) const;
     bool FindNumber(unsigned int & pos, unsigned int & end) const;
     bool FindString(const char *border, unsigned int & pos, unsigned int & end) const;
@@ -56,7 +62,7 @@ public:
 
     void GetWord(size_t pos,psString &buff,bool wantPunct=INCLUDE_PUNCT) const;
     void GetWordNumber(int which,psString& buff) const;
-    void GetLine(size_t start,csString& line) const;
+    void GetLine(size_t start, std::string& line) const;
 
     bool ReplaceSubString(const char* what, const char* with);
 
@@ -77,7 +83,7 @@ public:
     bool IsVowel(size_t pos); /// Check if a character is a vowel
     psString& Plural(); /// Turn the last word of the string into an English plural
 
-    void Split(csStringArray& result, char delim='|');
+    void Split(std::vector<std::string>& result, char delim='|');
 };
 
 /** @} */

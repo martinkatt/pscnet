@@ -16,9 +16,6 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  *
  */
-#include <psconfig.h>
-#include <ctype.h>
-#include <csutil/databuf.h>
 
 #include "util/psxmlparser.h"
 
@@ -26,20 +23,20 @@ int psXMLString::FindTag( const char* tagName, int start )
 {
     psString temp("<");
 
-    temp+=tagName;
+    temp += tagName;
 
-    return FindSubString( temp, start, XML_CASE_INSENSITIVE );
+    return FindSubString(temp.c_str(), start, XML_CASE_INSENSITIVE );
 }
 
 size_t psXMLString::FindNextTag( size_t start )
 {
     start++;
-    const char *myData = GetData();
+    const char *myData = this->c_str();
 
-    while ( start < Size && myData[start] != '<' )
+    while ( start < this->size() && myData[start] != '<' )
         start++;
 
-    if ( start < Size )
+    if ( start < this->size() )
         return start;
     else
         return (size_t)-1;
@@ -85,7 +82,7 @@ size_t psXMLString::GetTagSection(int start, const char* tagName,
     else
         GetSubString(tagSection, start, end+strlen(tagName)+3);
     
-    return tagSection.Length();
+    return tagSection.size();
 }
 
 size_t psXMLString::GetWithinTagSection(int start, const char* tagName, 
@@ -94,26 +91,26 @@ size_t psXMLString::GetWithinTagSection(int start, const char* tagName,
     size_t end = FindMatchingEndTag( start, tagName );
 
     if ( end == (size_t)-1 )
-        tagSection = psString("");
+        tagSection = psXMLString("");
     else
     {
         psXMLTag startTag;
         GetTag(start, startTag);
-        start+=(int)startTag.Length();
+        start+=(int)startTag.size();
         GetSubString(tagSection, start, end);
     }
-    return tagSection.Length();
+    return tagSection.size();
 }
 
 size_t psXMLString::GetWithinTagSection(int start, const char* tagName, 
-                                     csString& value)
+                                        std::string& value)
 {
     psXMLString tagSection;
     if (GetWithinTagSection(start,tagName,tagSection) > 0)
     {
         value = tagSection;
     }
-    return tagSection.Length();
+    return tagSection.size();
 }
 
 size_t psXMLString::GetWithinTagSection(int start, const char* tagName, 
@@ -122,9 +119,9 @@ size_t psXMLString::GetWithinTagSection(int start, const char* tagName,
     psXMLString tagSection;
     if (GetWithinTagSection(start,tagName,tagSection) > 0)
     {
-        value = atoi(tagSection.GetData());
+        value = atoi(tagSection.c_str());
     }
-    return tagSection.Length();
+    return tagSection.size();
 }
 size_t psXMLString::GetWithinTagSection(int start, const char* tagName, 
                                      double& value)
@@ -132,60 +129,61 @@ size_t psXMLString::GetWithinTagSection(int start, const char* tagName,
     psXMLString tagSection;
     if (GetWithinTagSection(start,tagName,tagSection) > 0)
     {
-        value = atof(tagSection.GetData());
+        value = atof(tagSection.c_str());
     }
-    return tagSection.Length();
+    return tagSection.size();
 }
 
 size_t psXMLString::GetTag( int start, psXMLTag& tag )
 {
     psString tmp(">");
-    int end = FindSubString(tmp, start);
+    int end = FindSubString(tmp.c_str(), start);
 
     if ( end == -1 )
-        tag.Empty();
+        tag.clear();
     else
         GetSubString(tag, start, end+1);
 
-    return tag.Length();
+    return tag.size();
 }
 
 //-------------------------------------------------------------------
 
-void psXMLTag::GetTagParm(const char* parm, csString& value )
+void psXMLTag::GetTagParm(const char* parm, std::string& value )
 {
     psString param(" ");
-    param.Append(parm);
-    param.Append('=');
+    param += parm;
+    param += '=';
  
-    int start = FindSubString(param, 0, XML_CASE_INSENSITIVE);
+    int start = FindSubString(param.c_str(), 0, XML_CASE_INSENSITIVE);
 
     //Checks to see if the parm is getting mixed up with the tag name.
     if ( start==1 )
     {
         psString tagName;
         GetTagName(tagName);
-        start = FindSubString(param,(int)tagName.Length(),XML_CASE_INSENSITIVE); 
+        start = FindSubString(param.c_str(),
+            (int)tagName.size(),XML_CASE_INSENSITIVE); 
     }
         
     psString tempStr;
 
     value="";
 
-    const char *myData = GetData();
+    const char *myData = param.c_str();
 
     while ( start != -1 )
     {
-        start += (int)param.Length();
+        start += (int)param.size();
         
-        if (start >= (int)Length())
+        if (start >= (int)this->size())
             return;
         
         // skip whitespace after parm name
         while (myData[start]==' ')
         {
             start++;
-            if (start >= (int)Length())
+            if (start >= (int)this->size())
                 return;
         }
         
@@ -203,7 +201,7 @@ void psXMLTag::GetTagParm(const char* parm, csString& value )
         else
             chr = ' ';
         
-        while ( end < Length() && myData[end]!=chr && myData[end] != '>')
+        while ( end < this->size() && myData[end]!=chr && myData[end] != '>')
             end++;
         
         GetSubString(tempStr, start+(chr!=' '), end);
@@ -234,7 +232,7 @@ void psXMLTag::GetTagParm(const char* parm, int &value )
     GetTagParm(parm, str);
 
     if (str!="")
-        value = atoi(str);
+        value = atoi(str.c_str());
     else
         value = -1;
 }
@@ -244,7 +242,7 @@ void psXMLTag::GetTagParm(const char* parm, float &value )
     psString str;
 
     GetTagParm(parm, str);
-    value = atof(str);
+    value = atof(str.c_str());
 }
 
 void psXMLTag::GetTagParm(const char* parm, double &value )
@@ -252,24 +250,24 @@ void psXMLTag::GetTagParm(const char* parm, double &value )
     psString str;
 
     GetTagParm(parm, str);
-    value = atof(str);
+    value = atof(str.c_str());
 }
 
 void psXMLTag::GetTagName( psString& str)
 {
     size_t i=1;
-    const char *myData = GetData();
+    const char *myData = this->c_str();
 
-    while ( i < Size && !isspace(myData[i]) && myData[i] != '>')
+    while ( i < this->size() && !isspace(myData[i]) && myData[i] != '>')
         i++;
 
     GetSubString(str, 1,i);
 }
 
 
-csPtr<iDocument> ParseFile(iObjectRegistry* object_reg, const csString & name)
+std::shared_ptr<iDocument> ParseFile(iObjectRegistry* object_reg, const csString & name)
 {
-    csRef<iVFS> vfs;
+    //csRef<iVFS> vfs;
     csRef<iDocumentSystem>  xml;
     csRef<iDocument> doc;
     const char* error;
